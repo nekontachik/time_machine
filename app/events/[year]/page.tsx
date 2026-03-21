@@ -9,7 +9,7 @@ interface Props {
 
 async function getEvents(year: number, lang: string): Promise<HistoricalEvent[]> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/events?year=${year}&lang=${lang}`, {
+  const res = await fetch(`${baseUrl}/api/historical-events?year=${year}&lang=${lang}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch events");

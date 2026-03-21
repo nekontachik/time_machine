@@ -22,7 +22,7 @@ export function useYearEvents(year: number | null, lang: Lang = "ua"): State {
     const controller = new AbortController();
     setState({ events: [], loading: true, error: null });
 
-    fetch(`/api/events?year=${year}&lang=${lang}`, {
+    fetch(`/api/historical-events?year=${year}&lang=${lang}`, {
       signal: controller.signal,
     })
       .then((res) => {
