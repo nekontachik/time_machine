@@ -1,0 +1,52 @@
+{
+  "home": {
+    "subtitle": "Обери рік — зміни історію — побач альтернативне майбутнє",
+    "viewEvents": "Переглянути події",
+    "loading": "Завантаження...",
+    "bceLabel": "до н.е."
+  },
+  "events": {
+    "happened": "✓ Сталось",
+    "didNotHappen": "✗ Не сталось",
+    "generate": "Згенерувати сценарій",
+    "generating": "Генерую...",
+    "bce": "до н.е.",
+    "year": "рік"
+  },
+  "scenario": {
+    "title": "Альтернативна історія",
+    "generating": "Генерую історію",
+    "generatingShort": "Генерація...",
+    "placeholder": "Оберіть події та натисніть «Генерувати сценарій».",
+    "errorPrefix": "Помилка:",
+    "bce": "до н.е.",
+    "yearSuffix": " рік",
+    "metaDescription": "Дізнайтесь, яким міг бути світ у {year}. Альтернативна історія, згенерована ШІ.",
+    "fallbackDescription": "Дізнайтесь, яким міг бути світ в альтернативній реальності. Powered by AI."
+  },
+  "shareCard": {
+    "altHistory": "Альтернативна історія",
+    "altReality": "Альтернативна реальність",
+    "copied": "Скопійовано!",
+    "share": "Поділитись",
+    "shareTelegram": "Поділитись у Telegram",
+    "shareTwitter": "Поділитись у Twitter/X"
+  },
+  "premium": {
+    "title": "Premium — Локальний вплив",
+    "description": "Дізнайтесь, як ця альтернативна реальність вплинула б на ваше місто.",
+    "countryPlaceholder": "Країна (напр. Україна)",
+    "cityPlaceholder": "Місто (напр. Київ)",
+    "priceLabel": "Premium — $4.99 / місяць",
+    "feature1": "Необмежені запити",
+    "feature2": "Локальний вплив (місто + країна)",
+    "feature3": "AI-відео (незабаром)",
+    "cancel": "Скасувати",
+    "confirm": "Оформити Premium"
+  },
+  "installPrompt": {
+    "message": "Встановити застосунок для швидкого доступу",
+    "install": "Встановити",
+    "dismiss": "Не зараз"
+  }
+}

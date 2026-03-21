@@ -1,0 +1,43 @@
+export type Lang = "ua" | "en" | "es" | "pt" | "pl";
+
+export type ImpactLevel = "high" | "medium" | "low";
+
+export interface HistoricalEvent {
+  id: string;
+  title: string;
+  description: string;
+  impact: ImpactLevel;
+}
+
+export interface EventToggle {
+  id: string;
+  happened: boolean;
+}
+
+export interface PremiumOptions {
+  country: string;
+  city: string;
+}
+
+export interface ScenarioRequest {
+  year: number;
+  events: EventToggle[];
+  customText?: string;
+  lang: Lang;
+  premium?: PremiumOptions;
+}
+
+export interface EventsResponse {
+  year: number;
+  events: HistoricalEvent[];
+}
+
+export interface ImageRequest {
+  scenarioSummary: string;
+  year: number;
+  style?: "cinematic" | "painterly" | "sketch";
+}
+
+export interface ImageResponse {
+  imageUrl: string;
+}

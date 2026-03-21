@@ -1,0 +1,52 @@
+{
+  "home": {
+    "subtitle": "Pick a year — change history — see the alternative future",
+    "viewEvents": "View Events",
+    "loading": "Loading...",
+    "bceLabel": "BCE"
+  },
+  "events": {
+    "happened": "✓ Happened",
+    "didNotHappen": "✗ Didn't happen",
+    "generate": "Generate Scenario",
+    "generating": "Generating...",
+    "bce": "BCE",
+    "year": ""
+  },
+  "scenario": {
+    "title": "Alternative History",
+    "generating": "Generating history",
+    "generatingShort": "Generating...",
+    "placeholder": "Select events and click \"Generate Scenario\".",
+    "errorPrefix": "Error:",
+    "bce": "BCE",
+    "yearSuffix": "",
+    "metaDescription": "Discover what the world could have been like in {year}. An AI-generated alternative history scenario.",
+    "fallbackDescription": "Discover what the world could have been like in an alternative reality. Powered by AI."
+  },
+  "shareCard": {
+    "altHistory": "Alternative History",
+    "altReality": "Alternative Reality",
+    "copied": "Copied!",
+    "share": "Share",
+    "shareTelegram": "Share on Telegram",
+    "shareTwitter": "Share on Twitter/X"
+  },
+  "premium": {
+    "title": "Premium — Local Impact",
+    "description": "Find out how this alternative reality would have impacted your city.",
+    "countryPlaceholder": "Country (e.g. Ukraine)",
+    "cityPlaceholder": "City (e.g. Kyiv)",
+    "priceLabel": "Premium — $4.99 / month",
+    "feature1": "Unlimited requests",
+    "feature2": "Local impact (city + country)",
+    "feature3": "AI video (coming soon)",
+    "cancel": "Cancel",
+    "confirm": "Get Premium"
+  },
+  "installPrompt": {
+    "message": "Install the app for quick access",
+    "install": "Install",
+    "dismiss": "Not now"
+  }
+}

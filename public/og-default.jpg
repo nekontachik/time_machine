@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0a0a0f"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Dark background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Stars -->
+  <circle cx="120" cy="80" r="1.5" fill="#ffffff" opacity="0.6"/>
+  <circle cx="340" cy="45" r="1" fill="#ffffff" opacity="0.4"/>
+  <circle cx="560" cy="110" r="2" fill="#ffffff" opacity="0.5"/>
+  <circle cx="780" cy="60" r="1.5" fill="#ffffff" opacity="0.7"/>
+  <circle cx="950" cy="90" r="1" fill="#ffffff" opacity="0.4"/>
+  <circle cx="1100" cy="40" r="2" fill="#ffffff" opacity="0.6"/>
+  <circle cx="200" cy="520" r="1.5" fill="#ffffff" opacity="0.5"/>
+  <circle cx="420" cy="570" r="1" fill="#ffffff" opacity="0.3"/>
+  <circle cx="680" cy="540" r="2" fill="#ffffff" opacity="0.6"/>
+  <circle cx="900" cy="580" r="1.5" fill="#ffffff" opacity="0.4"/>
+  <circle cx="1050" cy="510" r="1" fill="#ffffff" opacity="0.5"/>
+  <!-- Hourglass icon -->
+  <g transform="translate(560, 210)" filter="url(#glow)">
+    <path d="M40 0 L80 0 L80 5 L55 35 L55 65 L80 95 L80 100 L40 100 L40 95 L65 65 L65 35 L40 5 Z" fill="none" stroke="#6366f1" stroke-width="3" opacity="0.9"/>
+    <path d="M40 0 L80 0 L80 5 L55 35 L45 35 L45 5 Z" fill="#6366f1" opacity="0.4"/>
+    <path d="M55 65 L65 65 L80 95 L80 100 L40 100 L40 95 L55 65 Z" fill="#6366f1" opacity="0.25"/>
+  </g>
+  <!-- Title text -->
+  <text x="600" y="360" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="700" fill="#ffffff" text-anchor="middle" opacity="0.95">Time Machine</text>
+  <!-- Subtitle -->
+  <text x="600" y="420" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="400" fill="#a5b4fc" text-anchor="middle" opacity="0.8">AI Alternative History</text>
+  <!-- Bottom line -->
+  <line x1="480" y1="460" x2="720" y2="460" stroke="#6366f1" stroke-width="1" opacity="0.4"/>
+</svg>

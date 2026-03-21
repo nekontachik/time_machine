@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="576" viewBox="0 0 1024 576">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0a00"/>
+      <stop offset="50%" stop-color="#2d1a0a"/>
+      <stop offset="100%" stop-color="#0a0500"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="576" fill="url(#g)"/>
+  <text x="512" y="296" font-family="serif" font-size="28" fill="#7a5a30" text-anchor="middle" opacity="0.6">Ancient Era</text>
+</svg>
