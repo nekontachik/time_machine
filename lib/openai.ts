@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import sharp from "sharp";
 
 const client = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -59,7 +60,18 @@ async function callFlux(prompt: string): Promise<string> {
 
     const imageData = (response as unknown as { choices: { message: { images?: { image_url: { url: string } }[] } }[] })
       .choices?.[0]?.message?.images?.[0]?.image_url?.url
-    if (imageData) return imageData
+    if (imageData) {
+      if (imageData.startsWith("data:image/")) {
+        const base64 = imageData.replace(/^data:image\/\w+;base64,/, "")
+        const buffer = Buffer.from(base64, "base64")
+        const compressed = await sharp(buffer)
+          .resize({ width: 640 })
+          .webp({ quality: 80 })
+          .toBuffer()
+        return `data:image/webp;base64,${compressed.toString("base64")}`
+      }
+      return imageData
+    }
 
     throw new Error("No image returned from OpenRouter")
   } finally {

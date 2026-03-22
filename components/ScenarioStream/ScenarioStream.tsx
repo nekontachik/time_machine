@@ -9,12 +9,6 @@ interface Props {
   request?: ScenarioRequest;
 }
 
-function getPlaceholder(year: number | undefined): string {
-  if (year === undefined) return "/placeholder-modern.jpg";
-  if (year < -500) return "/placeholder-ancient.jpg";
-  if (year > 2024) return "/placeholder-future.jpg";
-  return "/placeholder-modern.jpg";
-}
 
 export default function ScenarioStream({ request }: Props) {
   const t = useTranslations("scenario");
@@ -142,22 +136,26 @@ export default function ScenarioStream({ request }: Props) {
     .replace(/__(.+?)__/g, "$1")
     .replace(/_(.+?)_/g, "$1");
 
-  const placeholder = getPlaceholder(request?.year);
-
   return (
     <div className="space-y-6">
-      {/* Image — placeholder while loading, real image when available */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-gray-700">
-        <Image
-          src={imageUrl ?? placeholder}
-          alt={`Alternative history ${request?.year ?? ""}`}
-          fill
-          className="object-cover transition-opacity duration-500"
-          priority
-        />
-        {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/60">
-            <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
+      {/* Image — only rendered when available, fades in above text */}
+      <div
+        className="overflow-hidden transition-all duration-500 ease-in-out"
+        style={{
+          maxHeight: imageUrl ? "600px" : "0px",
+          opacity: imageUrl ? 1 : 0,
+          marginBottom: imageUrl ? undefined : "0px",
+        }}
+      >
+        {imageUrl && (
+          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-gray-700">
+            <Image
+              src={imageUrl}
+              alt={`Alternative history ${request?.year ?? ""}`}
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
         )}
       </div>
