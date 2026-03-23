@@ -8,14 +8,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:fast": "vitest run",
-    "test:e2e": "playwright test",
-    "test:e2e:desktop": "playwright test --project=chromium",
-    "test:e2e:mobile": "playwright test --project=mobile",
-    "test:e2e:ui": "playwright test --ui"
+    "test": "vitest run --config config/vitest.config.ts",
+    "test:watch": "vitest --config config/vitest.config.ts",
+    "test:coverage": "vitest run --coverage --config config/vitest.config.ts",
+    "test:fast": "vitest run --config config/vitest.config.ts",
+    "test:e2e": "playwright test --config config/playwright.config.ts",
+    "test:e2e:desktop": "playwright test --config config/playwright.config.ts --project=chromium",
+    "test:e2e:mobile": "playwright test --config config/playwright.config.ts --project=mobile",
+    "test:e2e:ui": "playwright test --config config/playwright.config.ts --ui"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.4",

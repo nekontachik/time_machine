@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import EventsClient from "./EventsClient";
 import { generateEvents } from "@/lib/ai/text";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
-import { MOCK_EVENTS } from "@/__tests__/fixtures/events";
+import { MOCK_EVENTS } from "@/tests/fixtures/events";
 import type { HistoricalEvent } from "@/types";
 
 interface Props {
