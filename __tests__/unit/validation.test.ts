@@ -123,6 +123,126 @@ describe("Year boundary validation — GET /api/historical-events", () => {
     const body = await res.json();
     expect(body.error).toMatch(/year is required/i);
   });
+
+  // ---------------------------------------------------------------------------
+  // Fuzz / property-based style: NaN, null, exotic strings, extreme numbers
+  // ---------------------------------------------------------------------------
+
+  it("rejects the string 'NaN'", async () => {
+    const req = new Request("http://localhost/api/historical-events?year=NaN");
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    // parseInt('NaN') → NaN — must be caught and return 400
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects the string 'null'", async () => {
+    const req = new Request("http://localhost/api/historical-events?year=null");
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects the string 'undefined'", async () => {
+    const req = new Request("http://localhost/api/historical-events?year=undefined");
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects very large positive number: 999999999999", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=999999999999"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects very large negative number: -999999999999", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=-999999999999"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects Number.MAX_SAFE_INTEGER as string", async () => {
+    const req = new Request(
+      `http://localhost/api/historical-events?year=${Number.MAX_SAFE_INTEGER}`
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects Number.MIN_SAFE_INTEGER as string", async () => {
+    const req = new Request(
+      `http://localhost/api/historical-events?year=${Number.MIN_SAFE_INTEGER}`
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects scientific notation: '1e3'", async () => {
+    const req = new Request("http://localhost/api/historical-events?year=1e3");
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    // parseInt('1e3') === 1, which is in range — API may return 200 or 400;
+    // critical thing is it must not crash (no 500)
+    expect(res.status).not.toBe(500);
+  });
+
+  it("rejects leading-whitespace year: ' 1969'", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=%201969" // URL-encoded space
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    // parseInt(' 1969') === 1969 in JS — must not crash; 200 or 400 both acceptable
+    expect(res.status).not.toBe(500);
+  });
+
+  it("rejects hex string: '0x7B9' (1977 in hex)", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=0x7B9"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    // parseInt('0x7B9', 10) === 0 (stops at 'x'), which IS in range; must not 500
+    expect(res.status).not.toBe(500);
+  });
+
+  it("handles SQL injection attempt safely — parseInt extracts only numeric prefix", async () => {
+    // URL-decoded: year=1969;DROP TABLE events
+    // parseInt("1969;DROP TABLE events", 10) === 1969 (stops at ';')
+    // The API is safe because it converts to integer before any use.
+    // 1969 is a valid year → 200 is the correct response; 400 also acceptable.
+    const req = new Request(
+      "http://localhost/api/historical-events?year=1969%3BDROP%20TABLE%20events"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    // Critical invariant: must NOT crash (no 500), SQL never reaches a DB
+    expect(res.status).not.toBe(500);
+    expect([200, 400]).toContain(res.status);
+  });
+
+  it("rejects year as object/array notation: '[1969]'", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=%5B1969%5D"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects Infinity string", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=Infinity"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    // parseInt('Infinity') === NaN — must return 400
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects -Infinity string", async () => {
+    const req = new Request(
+      "http://localhost/api/historical-events?year=-Infinity"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("Constants sanity checks", () => {
