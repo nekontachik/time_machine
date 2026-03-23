@@ -16,6 +16,7 @@ export default defineConfig({
       provider: "v8",
       include: ["lib/**/*.ts", "app/api/**/*.ts"],
       exclude: ["**/*.d.ts", "node_modules"],
+      reporter: ["text", "json-summary", "html"],
     },
   },
 });

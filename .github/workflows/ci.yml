@@ -1,84 +1,320 @@
 name: CI
 
+# Run on every push to any branch and on every pull request
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
-    branches: [main]
+    branches: ["**"]
 
+# Cancel in-progress runs on the same branch/PR when a new commit arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  OPENROUTER_API_KEY: test-key
+  FAL_KEY: ""
+  REDIS_URL: ""
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
+
+  # ── 1. Lint ──────────────────────────────────────────────────────────────
   lint:
-    name: Lint
+    name: "🔍 Lint"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: npm ci
-      - run: npm run lint
 
-  unit-tests:
-    name: Unit & API Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm test
-    env:
-      OPENROUTER_API_KEY: test-key
-      FAL_KEY: ""
-      REDIS_URL: ""
+      - name: Install dependencies
+        run: npm ci
 
+      - name: ESLint
+        run: npm run lint
+
+  # ── 2. TypeScript ────────────────────────────────────────────────────────
   type-check:
-    name: TypeScript Check
+    name: "🔷 TypeScript"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: npm ci
-      - run: npx tsc --noEmit
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+  # ── 3. Unit & API Tests (with coverage + summary) ────────────────────────
+  unit-tests:
+    name: "🧪 Unit & API Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: |
+          mkdir -p test-results
+          npm run test:coverage -- \
+            --reporter=verbose \
+            --reporter=json \
+            --outputFile=test-results/unit-results.json
+
+      - name: Write unit test summary
+        if: always()
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          FILE="test-results/unit-results.json"
+
+          echo "## 🧪 Unit & API Tests — $DATE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "$FILE" ]; then
+            node - <<'EOF' >> $GITHUB_STEP_SUMMARY
+              const r = require('./test-results/unit-results.json');
+              const total   = r.numTotalTests    ?? 0;
+              const passed  = r.numPassedTests   ?? 0;
+              const failed  = r.numFailedTests   ?? 0;
+              const skipped = r.numPendingTests  ?? 0;
+              const status  = failed === 0 ? '✅ All tests passed' : `❌ ${failed} test(s) failed`;
+              console.log(`| Metric | Value |`);
+              console.log(`|--------|-------|`);
+              console.log(`| Status | ${status} |`);
+              console.log(`| ✅ Passed | ${passed} |`);
+              console.log(`| ❌ Failed | ${failed} |`);
+              console.log(`| ⏭️ Skipped | ${skipped} |`);
+              console.log(`| 📦 Total | ${total} |`);
+              console.log('');
+              if (failed > 0) {
+                console.log('### ❌ Failed tests');
+                (r.testResults || []).forEach(suite => {
+                  (suite.assertionResults || [])
+                    .filter(t => t.status === 'failed')
+                    .forEach(t => console.log('- `' + t.fullName + '`'));
+                });
+                console.log('');
+              }
+EOF
+          else
+            echo "⚠️ Result file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Coverage table
+          if [ -f "coverage/coverage-summary.json" ]; then
+            echo "### 📊 Coverage" >> $GITHUB_STEP_SUMMARY
+            node - <<'EOF' >> $GITHUB_STEP_SUMMARY
+              const c = require('./coverage/coverage-summary.json').total;
+              const p = k => c[k] ? c[k].pct.toFixed(1) + '%' : 'n/a';
+              console.log('| Lines | Statements | Functions | Branches |');
+              console.log('|-------|------------|-----------|----------|');
+              console.log(`| ${p('lines')} | ${p('statements')} | ${p('functions')} | ${p('branches')} |`);
+EOF
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_number }}-${{ github.sha }}
+          path: coverage/
+          retention-days: 30
+
+      - name: Upload unit test JSON results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-results-${{ github.run_number }}
+          path: test-results/
+          retention-days: 14
+
+  # ── 4. E2E Tests — Desktop ──────────────────────────────────────────────
   e2e-desktop:
-    name: E2E Tests (Desktop)
+    name: "🖥️ E2E Tests (Desktop)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e:desktop
-    env:
-      OPENROUTER_API_KEY: test-key
-      FAL_KEY: ""
-      REDIS_URL: ""
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Playwright + system deps
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps only (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E tests (Desktop)
+        id: e2e_desktop
+        run: npm run test:e2e:desktop
+        continue-on-error: true
+
+      - name: Write E2E desktop summary
+        if: always()
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          OUTCOME="${{ steps.e2e_desktop.outcome }}"
+          ICON=$( [ "$OUTCOME" = "success" ] && echo "✅" || echo "❌" )
+
+          echo "## 🖥️ E2E Desktop — $DATE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "$ICON Desktop E2E tests **$OUTCOME**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📄 Full interactive HTML report: artifact \`e2e-desktop-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Playwright Desktop report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-desktop-${{ github.run_number }}-${{ github.sha }}
+          path: playwright-report/
+          retention-days: 30
+
+      # Fail the job only after uploading the report
+      - name: Fail if E2E tests failed
+        if: steps.e2e_desktop.outcome == 'failure'
+        run: exit 1
+
+  # ── 5. E2E Tests — Mobile ───────────────────────────────────────────────
   e2e-mobile:
-    name: E2E Tests (Mobile)
+    name: "📱 E2E Tests (Mobile)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e:mobile
-    env:
-      OPENROUTER_API_KEY: test-key
-      FAL_KEY: ""
-      REDIS_URL: ""
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Playwright + system deps
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps only (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E tests (Mobile)
+        id: e2e_mobile
+        run: npm run test:e2e:mobile
+        continue-on-error: true
+
+      - name: Write E2E mobile summary
+        if: always()
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          OUTCOME="${{ steps.e2e_mobile.outcome }}"
+          ICON=$( [ "$OUTCOME" = "success" ] && echo "✅" || echo "❌" )
+
+          echo "## 📱 E2E Mobile — $DATE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "$ICON Mobile E2E tests **$OUTCOME**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📄 Full interactive HTML report: artifact \`e2e-mobile-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Playwright Mobile report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-mobile-${{ github.run_number }}-${{ github.sha }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Fail if E2E tests failed
+        if: steps.e2e_mobile.outcome == 'failure'
+        run: exit 1
+
+  # ── 6. Final pipeline summary ────────────────────────────────────────────
+  summary:
+    name: "📋 Report"
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, unit-tests, e2e-desktop, e2e-mobile]
+    if: always()
+    steps:
+      - name: Write final pipeline report
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+          LINT="${{ needs.lint.result }}"
+          TYPES="${{ needs.type-check.result }}"
+          UNIT="${{ needs.unit-tests.result }}"
+          E2E_D="${{ needs.e2e-desktop.result }}"
+          E2E_M="${{ needs.e2e-mobile.result }}"
+
+          icon() {
+            case "$1" in
+              success)   echo "✅" ;;
+              failure)   echo "❌" ;;
+              cancelled) echo "🚫" ;;
+              skipped)   echo "⏭️" ;;
+              *)         echo "❓" ;;
+            esac
+          }
+
+          # Overall status — E2E failures are reported but don't block merge
+          if [ "$LINT" = "success" ] && [ "$TYPES" = "success" ] && [ "$UNIT" = "success" ]; then
+            OVERALL="✅ Core pipeline passed"
+          else
+            OVERALL="❌ Core pipeline failed"
+          fi
+
+          echo "# 📋 CI Report — $DATE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### $OVERALL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Lint           | $(icon $LINT) \`$LINT\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔷 TypeScript     | $(icon $TYPES) \`$TYPES\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit & API     | $(icon $UNIT) \`$UNIT\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🖥️ E2E Desktop    | $(icon $E2E_D) \`$E2E_D\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 E2E Mobile     | $(icon $E2E_M) \`$E2E_M\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "_Run [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · \`${{ github.ref_name }}\` · \`${GITHUB_SHA::7}\`_" >> $GITHUB_STEP_SUMMARY
