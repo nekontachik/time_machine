@@ -1,53 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pollVideoTask } from "@/lib/video-providers/kling";
 import { getClientIp } from "@/lib/rateLimit";
-import Redis from "ioredis";
-
-// ---------------------------------------------------------------------------
-// Development bypass — skip Redis premium check in local dev
-// ---------------------------------------------------------------------------
-
-const SKIP_PREMIUM = process.env.NODE_ENV === "development";
-
-// ---------------------------------------------------------------------------
-// Premium check (shared pattern — consider extracting to lib/premium.ts later)
-// ---------------------------------------------------------------------------
-
-let redis: Redis | null = null;
-let redisUnavailable = false;
-
-function getRedis(): Redis | null {
-  if (redisUnavailable) return null;
-  if (!redis) {
-    const url = process.env.REDIS_URL;
-    if (!url) {
-      redisUnavailable = true;
-      return null;
-    }
-    redis = new Redis(url, {
-      connectTimeout: 3000,
-      maxRetriesPerRequest: 1,
-      lazyConnect: true,
-    });
-    redis.on("error", () => {
-      redisUnavailable = true;
-      redis = null;
-    });
-  }
-  return redis;
-}
-
-async function isPremium(ip: string): Promise<boolean> {
-  if (SKIP_PREMIUM) return true;
-  const r = getRedis();
-  if (!r) return false;
-  try {
-    const val = await r.get(`premium:${ip}`);
-    return val === "true" || val === "1";
-  } catch {
-    return false;
-  }
-}
+import { isPremium } from "@/lib/premium";
 
 // ---------------------------------------------------------------------------
 // Route handler — GET /api/video/status?taskId=<id>

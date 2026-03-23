@@ -1,7 +1,7 @@
-// TODO: REMOVE OR PROTECT THIS ENDPOINT BEFORE GOING TO PRODUCTION.
-// It is intentionally unauthenticated and rate-unlimited for local development
-// use only. Add an env-guard or move behind auth before deploying.
-
+/**
+ * Dev-only endpoint for testing Flux image generation.
+ * Returns 404 in production to prevent abuse.
+ */
 import { NextRequest, NextResponse } from "next/server"
 import { buildFluxPrompt, generateScenarioImage } from "@/lib/openai"
 
@@ -19,6 +19,11 @@ interface TestFluxResponse {
 }
 
 export async function POST(req: NextRequest) {
+  // Block in production
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
   let body: TestFluxRequest
   try {
     body = (await req.json()) as TestFluxRequest
@@ -46,6 +51,6 @@ export async function POST(req: NextRequest) {
     imageUrl,
     prompt,
     generationTimeMs,
-    model: "black-forest-labs/flux-1-schnell",
+    model: "fal-ai/flux/schnell",
   } satisfies TestFluxResponse)
 }

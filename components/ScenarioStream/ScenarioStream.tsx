@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ScenarioRequest } from "@/types";
 
@@ -16,7 +15,6 @@ export default function ScenarioStream({ request }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const textRef = useRef("");
 
@@ -25,7 +23,6 @@ export default function ScenarioStream({ request }: Props) {
   // Reset image when request changes
   useEffect(() => {
     setImageUrl(null);
-    setImageLoading(false);
     textRef.current = "";
   }, [requestKey]);
 
@@ -77,7 +74,6 @@ export default function ScenarioStream({ request }: Props) {
           // Fetch image after text streaming completes
           if (textRef.current && request?.year) {
             const summary = textRef.current.slice(0, 400);
-            setImageLoading(true);
             fetch("/api/image", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -85,8 +81,7 @@ export default function ScenarioStream({ request }: Props) {
             })
               .then((r) => r.ok ? r.json() : null)
               .then((data) => { if (!ignore && data?.imageUrl) setImageUrl(data.imageUrl); })
-              .catch(() => {/* silently ignore image errors */})
-              .finally(() => { if (!ignore) setImageLoading(false); });
+              .catch(() => {/* silently ignore image errors */});
           }
         }
       }
@@ -138,27 +133,14 @@ export default function ScenarioStream({ request }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Image — only rendered when available, fades in above text */}
-      <div
-        className="overflow-hidden transition-all duration-500 ease-in-out"
-        style={{
-          maxHeight: imageUrl ? "600px" : "0px",
-          opacity: imageUrl ? 1 : 0,
-          marginBottom: imageUrl ? undefined : "0px",
-        }}
-      >
-        {imageUrl && (
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-gray-700">
-            <Image
-              src={imageUrl}
-              alt={`Alternative history ${request?.year ?? ""}`}
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-        )}
-      </div>
+      {/* Image — only rendered when a real (non-placeholder) URL is ready */}
+      {imageUrl && !imageUrl.startsWith("/placeholder") && (
+        <img
+          src={imageUrl}
+          alt={`Alternative history ${request?.year ?? ""}`}
+          className="w-full rounded-xl border border-gray-700 object-cover animate-fade-in"
+        />
+      )}
 
       {/* Scenario text */}
       <div className="rounded-xl border border-gray-700 bg-gray-800/40 p-6">

@@ -1,20 +1,12 @@
 import { notFound } from "next/navigation";
 import EventsClient from "./EventsClient";
+import { generateEvents } from "@/lib/claude";
+import { getCachedEvents, setCachedEvents } from "@/lib/redis";
 import type { HistoricalEvent } from "@/types";
 
 interface Props {
   params: { year: string };
   searchParams: { lang?: string };
-}
-
-async function getEvents(year: number, lang: string): Promise<HistoricalEvent[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/historical-events?year=${year}&lang=${lang}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Failed to fetch events");
-  const data = await res.json();
-  return data.events as HistoricalEvent[];
 }
 
 export default async function EventsPage({ params, searchParams }: Props) {
@@ -25,7 +17,13 @@ export default async function EventsPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const events = await getEvents(year, lang);
+  const cached = await getCachedEvents(year, lang);
+  const events: HistoricalEvent[] = cached
+    ? (cached as HistoricalEvent[])
+    : await generateEvents(year, lang).then(async (generated) => {
+        await setCachedEvents(year, lang, generated);
+        return generated;
+      });
 
   const isEn = lang === "en";
   const bce = isEn ? "BCE" : "до н.е.";
