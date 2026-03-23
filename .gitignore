@@ -38,6 +38,11 @@ yarn-error.log*
 .cursor/
 .vscode/
 
+# Local dev scratch files — not for source control
+CURSOR_PROMPT_UI_TESTS.md
+*.docx
+*.audit.md
+
 # vercel
 .vercel
 
