@@ -99,6 +99,15 @@ Tests cover:
 - API contract validation (error codes, required fields)
 - Responsive design (mobile viewport)
 
+### Testing Strategy
+
+This project uses AI providers (OpenRouter, fal.ai) for core functionality. The testing approach accounts for this:
+
+- **External AI calls are mocked** — `lib/claude.ts` and `lib/openai.ts` are mocked in tests because calling real AI APIs in CI would be slow, expensive, and non-deterministic. This is reflected in the coverage report (these files show 0%), but is intentional.
+- **Pure logic is tested directly** — prompt builders (`buildFluxPrompt`, `buildMotionPrompt`), scenario type detection, and input validation are tested with real assertions.
+- **Infrastructure gracefully degrades** — Redis, rate limiting, and premium checks are tested for fail-open behavior when dependencies are unavailable.
+- **API contracts are validated at two levels** — Vitest tests mock the AI layer and verify route-level logic (validation, error codes, rate limiting). Playwright E2E tests hit the running server to verify HTTP contracts independently.
+
 ## API Routes
 
 | Route | Method | Description |
