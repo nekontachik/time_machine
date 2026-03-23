@@ -1,14 +1,20 @@
 import "server-only";
 import OpenAI from "openai";
 import type { HistoricalEvent } from "@/types";
+import { EVENTS_MODEL, SCENARIO_MODEL } from "@/constants";
+
+/**
+ * Text generation via OpenRouter.
+ *
+ * Uses OpenAI-compatible SDK pointed at OpenRouter's API endpoint.
+ * - Historical events → fast Gemini Flash model
+ * - Alternative history scenarios → Claude Sonnet (streaming)
+ */
 
 const client = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: process.env.OPENROUTER_API_KEY,
 });
-
-const EVENTS_MODEL = "google/gemini-2.0-flash-001";
-const SCENARIO_MODEL = "anthropic/claude-sonnet-4-5";
 
 export async function generateEvents(
   year: number,

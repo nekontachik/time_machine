@@ -5,7 +5,7 @@ vi.stubEnv("OPENROUTER_API_KEY", "test-key");
 vi.stubEnv("RATE_LIMIT_FREE", "100");
 
 // Mock rate limit to always allow
-vi.mock("@/lib/rateLimit", () => ({
+vi.mock("@/lib/infrastructure/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 99 }),
   getClientIp: vi.fn().mockReturnValue("127.0.0.1"),
 }));
@@ -18,7 +18,7 @@ const mockStream = new ReadableStream({
   },
 });
 
-vi.mock("@/lib/claude", () => ({
+vi.mock("@/lib/ai/text", () => ({
   streamScenario: vi.fn().mockResolvedValue(mockStream),
 }));
 
@@ -69,7 +69,7 @@ describe("POST /api/scenario", () => {
 
   it("rate limits when limit exceeded", async () => {
     // Override mock for this test
-    const { checkRateLimit } = await import("@/lib/rateLimit");
+    const { checkRateLimit } = await import("@/lib/infrastructure/rate-limit");
     vi.mocked(checkRateLimit).mockResolvedValueOnce({
       allowed: false,
       remaining: 0,

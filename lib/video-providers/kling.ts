@@ -15,17 +15,16 @@ import "server-only";
  */
 
 import { fal } from "@fal-ai/client";
+import { VIDEO_MODEL as MODEL } from "@/constants";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-const VIDEO_MODEL = "fal-ai/kling-video/v2/master/image-to-video";
-
 // Mock when no FAL_KEY configured
 const USE_MOCK = !process.env.FAL_KEY || process.env.FAL_KEY.trim() === "";
 
-// Ensure fal is configured (credentials set globally in openai.ts,
+// Ensure fal is configured (credentials also set in lib/ai/image.ts,
 // but we set it here too for safety)
 if (!USE_MOCK) {
   fal.config({ credentials: process.env.FAL_KEY });
@@ -91,12 +90,11 @@ async function realCreateTask(
 ): Promise<VideoGenerationResult> {
   const startMs = Date.now();
 
-  const { request_id } = await fal.queue.submit(VIDEO_MODEL, {
+  const { request_id } = await fal.queue.submit(MODEL, {
     input: {
       prompt: input.prompt,
       image_url: input.imageUrl,
-      duration: String(input.duration),
-      aspect_ratio: "16:9",
+      duration: String(input.duration) as "5" | "10",
     },
   });
 
@@ -110,7 +108,7 @@ async function realCreateTask(
 async function realPollTask(taskId: string): Promise<VideoGenerationResult> {
   const startMs = Date.now();
 
-  const statusResponse = await fal.queue.status(VIDEO_MODEL, {
+  const statusResponse = await fal.queue.status(MODEL, {
     requestId: taskId,
     logs: false,
   });
@@ -119,7 +117,7 @@ async function realPollTask(taskId: string): Promise<VideoGenerationResult> {
 
   if (falStatus === "COMPLETED") {
     // Fetch the actual result
-    const result = await fal.queue.result(VIDEO_MODEL, {
+    const result = await fal.queue.result(MODEL, {
       requestId: taskId,
     });
 

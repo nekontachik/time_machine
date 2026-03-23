@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildMotionPrompt, detectScenarioType } from "@/lib/motionPrompt";
-import type { ScenarioType } from "@/lib/motionPrompt";
+import { buildMotionPrompt, detectScenarioType } from "@/lib/ai/video-prompt";
+import type { ScenarioType } from "@/lib/ai/video-prompt";
 
 describe("detectScenarioType", () => {
   it("detects disaster scenarios", () => {

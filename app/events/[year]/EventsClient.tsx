@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import EventCard from "@/components/EventCard/EventCard";
+import EventCard from "@/components/features/EventCard/EventCard";
 import type { HistoricalEvent } from "@/types";
 
 interface Props {

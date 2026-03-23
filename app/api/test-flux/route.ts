@@ -3,7 +3,7 @@
  * Returns 404 in production to prevent abuse.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { buildFluxPrompt, generateScenarioImage } from "@/lib/openai"
+import { buildFluxPrompt, generateScenarioImage } from "@/lib/ai/image"
 
 interface TestFluxRequest {
   event: string

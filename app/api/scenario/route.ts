@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { streamScenario } from "@/lib/claude";
-import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { streamScenario } from "@/lib/ai/text";
+import { checkRateLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
 import type { ScenarioRequest } from "@/types";
 
 export async function POST(req: NextRequest) {

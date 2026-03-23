@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateEvents } from "@/lib/claude";
-import { getCachedEvents, setCachedEvents } from "@/lib/redis";
+import { generateEvents } from "@/lib/ai/text";
+import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
 import type { EventsResponse, HistoricalEvent } from "@/types";
 
 export async function GET(req: NextRequest) {

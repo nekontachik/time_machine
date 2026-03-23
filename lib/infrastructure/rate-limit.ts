@@ -1,44 +1,20 @@
 import "server-only";
 import { NextRequest } from "next/server";
-import Redis from "ioredis";
+import { getRedisClient } from "./redis-client";
+import { DEFAULT_RATE_LIMIT } from "@/constants";
 
-const FREE_LIMIT = parseInt(process.env.RATE_LIMIT_FREE ?? '3');
-
-let redis: Redis | null = null;
-let redisUnavailable = false;
-
-function getRedis(): Redis | null {
-  if (redisUnavailable) return null;
-  if (!redis) {
-    const url = process.env.REDIS_URL;
-    if (!url) {
-      redisUnavailable = true;
-      return null;
-    }
-    redis = new Redis(url, {
-      connectTimeout: 3000,
-      maxRetriesPerRequest: 1,
-      lazyConnect: true,
-    });
-    redis.on("error", () => {
-      redisUnavailable = true;
-      redis = null;
-    });
-  }
-  return redis;
-}
+const FREE_LIMIT = parseInt(process.env.RATE_LIMIT_FREE ?? String(DEFAULT_RATE_LIMIT));
 
 export function getClientIp(req: NextRequest): string {
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown"
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
   );
 }
 
 export async function checkRateLimit(
   ip: string
 ): Promise<{ allowed: boolean; remaining: number }> {
-  const r = getRedis();
+  const r = getRedisClient();
   if (!r) return { allowed: true, remaining: FREE_LIMIT };
 
   try {

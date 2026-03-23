@@ -47,10 +47,9 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
 
-  e2e-tests:
-    name: E2E Tests
+  e2e-desktop:
+    name: E2E Tests (Desktop)
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,7 +58,25 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e -- --project=chromium
+      - run: npm run test:e2e:desktop
+    env:
+      OPENROUTER_API_KEY: test-key
+      FAL_KEY: ""
+      REDIS_URL: ""
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+  e2e-mobile:
+    name: E2E Tests (Mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:mobile
     env:
       OPENROUTER_API_KEY: test-key
       FAL_KEY: ""

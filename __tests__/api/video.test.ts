@@ -4,7 +4,7 @@ vi.stubEnv("FAL_KEY", "");
 vi.stubEnv("NODE_ENV", "development"); // SKIP_PREMIUM = true
 
 // Mock rate limit
-vi.mock("@/lib/rateLimit", () => ({
+vi.mock("@/lib/infrastructure/rate-limit", () => ({
   getClientIp: vi.fn().mockReturnValue("127.0.0.1"),
 }));
 
@@ -111,7 +111,7 @@ describe("Premium gate", () => {
     vi.doMock("@/lib/premium", () => ({
       isPremium: vi.fn().mockResolvedValue(false),
     }));
-    vi.doMock("@/lib/rateLimit", () => ({
+    vi.doMock("@/lib/infrastructure/rate-limit", () => ({
       getClientIp: vi.fn().mockReturnValue("127.0.0.1"),
     }));
 

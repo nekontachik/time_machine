@@ -1,5 +1,5 @@
-import YearSection from "@/components/YearSection";
-import HomeSubtitle from "@/components/HomeSubtitle";
+import YearSection from "@/components/features/YearSection";
+import HomeSubtitle from "@/components/layout/HomeSubtitle";
 
 export default function HomePage() {
   return (

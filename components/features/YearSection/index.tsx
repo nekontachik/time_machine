@@ -4,11 +4,9 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { MIN_YEAR, MAX_YEAR } from "@/constants";
 
-const StarField = dynamic(() => import("@/components/StarField"), { ssr: false });
-
-const MIN_YEAR = -3000;
-const MAX_YEAR = 2024;
+const StarField = dynamic(() => import("@/components/layout/StarField"), { ssr: false });
 
 export default function YearSection() {
   const t = useTranslations("home");

@@ -5,7 +5,7 @@ vi.stubEnv("REDIS_URL", "");
 vi.stubEnv("OPENROUTER_API_KEY", "test-key");
 
 // Mock the lib modules
-vi.mock("@/lib/claude", () => ({
+vi.mock("@/lib/ai/text", () => ({
   generateEvents: vi.fn().mockResolvedValue([
     { id: "1", title: "Moon Landing", description: "First human on the moon", impact: "high" },
     { id: "2", title: "Woodstock", description: "Music festival", impact: "medium" },
@@ -15,7 +15,7 @@ vi.mock("@/lib/claude", () => ({
   ]),
 }));
 
-vi.mock("@/lib/redis", () => ({
+vi.mock("@/lib/infrastructure/cache", () => ({
   getCachedEvents: vi.fn().mockResolvedValue(null),
   setCachedEvents: vi.fn().mockResolvedValue(undefined),
 }));

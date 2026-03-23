@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateScenarioImage } from "@/lib/openai";
+import { generateScenarioImage } from "@/lib/ai/image";
 import type { ImageRequest, ImageResponse } from "@/types";
 
 export async function POST(req: NextRequest) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createVideoTask } from "@/lib/video-providers/kling";
-import { getClientIp } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/infrastructure/rate-limit";
 import { isPremium } from "@/lib/premium";
 import type { VideoGenerationInput } from "@/lib/video-providers/kling";
 

@@ -5,12 +5,12 @@ vi.stubEnv("REDIS_URL", "");
 vi.stubEnv("RATE_LIMIT_FREE", "3");
 
 describe("Rate limiting (no Redis fallback)", () => {
-  let checkRateLimit: typeof import("@/lib/rateLimit").checkRateLimit;
+  let checkRateLimit: typeof import("@/lib/infrastructure/rate-limit").checkRateLimit;
 
   beforeEach(async () => {
     // Dynamic import so env stubs are picked up
     vi.resetModules();
-    const mod = await import("@/lib/rateLimit");
+    const mod = await import("@/lib/infrastructure/rate-limit");
     checkRateLimit = mod.checkRateLimit;
   });
 
@@ -27,11 +27,11 @@ describe("Rate limiting (no Redis fallback)", () => {
 });
 
 describe("getClientIp", () => {
-  let getClientIp: typeof import("@/lib/rateLimit").getClientIp;
+  let getClientIp: typeof import("@/lib/infrastructure/rate-limit").getClientIp;
 
   beforeEach(async () => {
     vi.resetModules();
-    const mod = await import("@/lib/rateLimit");
+    const mod = await import("@/lib/infrastructure/rate-limit");
     getClientIp = mod.getClientIp;
   });
 

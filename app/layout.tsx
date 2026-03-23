@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
-import LanguageToggle from "@/components/LanguageToggle";
-import InstallPrompt from "@/components/InstallPrompt";
-import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import LanguageToggle from "@/components/layout/LanguageToggle";
+import InstallPrompt from "@/components/layout/InstallPrompt";
+import ServiceWorkerRegister from "@/components/layout/ServiceWorkerRegister";
 
 type Locale = "uk" | "en";
 

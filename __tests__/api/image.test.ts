@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.stubEnv("FAL_KEY", "test-key");
 
 // Mock the fal.ai image generation
-vi.mock("@/lib/openai", () => ({
+vi.mock("@/lib/ai/image", () => ({
   generateScenarioImage: vi.fn().mockResolvedValue("https://fal.ai/result/test-image.jpg"),
   buildFluxPrompt: vi.fn().mockReturnValue("Test cinematic prompt"),
 }));

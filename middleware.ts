@@ -32,6 +32,15 @@ export function middleware(req: NextRequest) {
 
   const response = NextResponse.next();
 
+  // E2E mock: set cookie when ?e2e_mock=1 so subsequent navigations use mock events
+  if (pathname.startsWith("/events/") && req.nextUrl.searchParams.get("e2e_mock") === "1") {
+    response.cookies.set("e2e_mock_events", "1", {
+      path: "/",
+      maxAge: 60 * 60,
+      sameSite: "lax",
+    });
+  }
+
   // Set locale cookie if not already set
   if (!req.cookies.get("locale")) {
     const locale = detectLocale(req);

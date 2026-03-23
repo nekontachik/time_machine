@@ -15,13 +15,12 @@ test.describe("Home page", () => {
 
   test("navigates to events page when a year is submitted", async ({ page }) => {
     await page.goto("/");
-    // Find and click the submit/explore button
-    const button = page.locator("button, a").filter({ hasText: /explor|досліди|перейти|go/i }).first();
-    if (await button.isVisible()) {
-      await button.click();
-      await page.waitForURL(/\/events\//);
-      expect(page.url()).toContain("/events/");
-    }
+    const button = page.getByRole("button", {
+      name: /переглянути події|view events/i,
+    });
+    await button.click();
+    await page.waitForURL(/\/events\//);
+    expect(page.url()).toContain("/events/");
   });
 
   test("starfield canvas renders", async ({ page }) => {
@@ -34,13 +33,3 @@ test.describe("Home page", () => {
   });
 });
 
-test.describe("Responsive design", () => {
-  test("home page is usable on mobile viewport", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto("/");
-    await expect(page.locator("h1")).toBeVisible();
-    // Slider should still be visible on mobile
-    const slider = page.locator('input[type="range"]');
-    await expect(slider).toBeVisible();
-  });
-});

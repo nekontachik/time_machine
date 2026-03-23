@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import ScenarioStream from "@/components/ScenarioStream/ScenarioStream";
+import ScenarioStream from "@/components/features/ScenarioStream/ScenarioStream";
 // import ShareCard from "@/components/ShareCard/ShareCard";
 import type { ScenarioRequest, Lang } from "@/types";
 

@@ -4,12 +4,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.stubEnv("REDIS_URL", "");
 
 describe("Redis cache (no Redis fallback)", () => {
-  let getCachedEvents: typeof import("@/lib/redis").getCachedEvents;
-  let setCachedEvents: typeof import("@/lib/redis").setCachedEvents;
+  let getCachedEvents: typeof import("@/lib/infrastructure/cache").getCachedEvents;
+  let setCachedEvents: typeof import("@/lib/infrastructure/cache").setCachedEvents;
 
   beforeEach(async () => {
     vi.resetModules();
-    const mod = await import("@/lib/redis");
+    const mod = await import("@/lib/infrastructure/cache");
     getCachedEvents = mod.getCachedEvents;
     setCachedEvents = mod.setCachedEvents;
   });

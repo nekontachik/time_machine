@@ -33,6 +33,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# IDE / AI tool configs (may contain API keys in allowed commands)
+.claude/
+.cursor/
+.vscode/
+
 # vercel
 .vercel
 

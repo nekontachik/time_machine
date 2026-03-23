@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildFluxPrompt } from "@/lib/openai";
+import { buildFluxPrompt } from "@/lib/ai/image";
 
 describe("buildFluxPrompt", () => {
   it("includes era label for AD years", () => {
