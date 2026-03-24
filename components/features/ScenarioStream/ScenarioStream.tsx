@@ -80,8 +80,8 @@ export default function ScenarioStream({ request }: Props) {
     setVideoError(null);
     pollCountRef.current = 0;
 
-    // Extract first event name as context for the motion prompt (server-side)
-    const firstEvent = request.events.find((e) => e.selected);
+    // Extract first "didn't happen" event as context for the motion prompt
+    const firstEvent = request.events.find((e) => !e.happened);
 
     try {
       const res = await fetch("/api/video/create", {
