@@ -20,10 +20,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const imageUrl = await generateScenarioImage(scenarioSummary, year, style);
-    return NextResponse.json({ imageUrl } satisfies ImageResponse);
+    const result = await generateScenarioImage(scenarioSummary, year, style);
+
+    // generateScenarioImage returns an error descriptor for auth/billing issues
+    if (typeof result === "object" && "error" in result) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status }
+      );
+    }
+
+    return NextResponse.json({ imageUrl: result } satisfies ImageResponse);
   } catch (err) {
-    console.error("[image]", err);
+    // Safety net — should never reach here after the normalisation in image.ts
+    console.error("[image] unhandled error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

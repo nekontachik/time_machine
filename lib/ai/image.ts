@@ -39,6 +39,51 @@ function getPlaceholderUrl(year: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// fal.ai error classification
+// ---------------------------------------------------------------------------
+
+export class FalAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FalAuthError";
+  }
+}
+
+/**
+ * fal.ai can throw plain objects, fetch Responses, or non-standard values.
+ * Normalise everything into a proper Error so every catch block works reliably.
+ */
+function normalizeFalError(err: unknown): Error {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    if (
+      msg.includes("401") ||
+      msg.includes("402") ||
+      msg.includes("403") ||
+      msg.includes("unauthorized") ||
+      msg.includes("forbidden") ||
+      msg.includes("payment") ||
+      msg.includes("billing") ||
+      msg.includes("quota")
+    ) {
+      return new FalAuthError(err.message);
+    }
+    return err;
+  }
+  if (typeof err === "object" && err !== null) {
+    const obj = err as Record<string, unknown>;
+    const status = obj.status ?? obj.statusCode ?? obj.code;
+    const detail =
+      obj.message ?? obj.detail ?? obj.error ?? JSON.stringify(err);
+    if (status === 401 || status === 402 || status === 403) {
+      return new FalAuthError(String(detail));
+    }
+    return new Error(String(detail));
+  }
+  return new Error(String(err));
+}
+
+// ---------------------------------------------------------------------------
 // Single Flux call with timeout
 // ---------------------------------------------------------------------------
 
@@ -47,15 +92,22 @@ async function callFlux(prompt: string): Promise<string> {
     setTimeout(() => reject(new Error("fal.ai timeout")), IMAGE_TIMEOUT_MS)
   );
 
-  const falPromise = fal.subscribe(IMAGE_MODEL, {
-    input: {
-      prompt,
-      image_size: "landscape_16_9",
-      num_images: 1,
-    },
-  });
-
-  const result = await Promise.race([falPromise, timeoutPromise]);
+  let result: unknown;
+  try {
+    result = await Promise.race([
+      fal.subscribe(IMAGE_MODEL, {
+        input: {
+          prompt,
+          image_size: "landscape_16_9",
+          num_images: 1,
+        },
+      }),
+      timeoutPromise,
+    ]);
+  } catch (err) {
+    // Re-throw as a normalised Error so catch blocks always get an Error instance
+    throw normalizeFalError(err);
+  }
 
   console.log(
     "[flux] response images:",
@@ -78,28 +130,36 @@ export async function generateScenarioImage(
   year: number,
   _style: string = "cinematic",
   event: string = ""
-): Promise<string> {
+): Promise<string | { error: string; status: number }> {
   const prompt = event
     ? buildFluxPrompt(event, scenarioSummary, year)
     : buildFluxPrompt(scenarioSummary, scenarioSummary, year);
 
-  let lastError: unknown;
+  let lastError: Error | undefined;
 
   for (let attempt = 1; attempt <= IMAGE_MAX_ATTEMPTS; attempt++) {
     try {
       return await callFlux(prompt);
     } catch (err) {
-      lastError = err;
+      const normalized = normalizeFalError(err);
+      lastError = normalized;
+
+      // Auth/billing errors won't be fixed by retrying — bail out immediately
+      if (normalized instanceof FalAuthError) {
+        console.error("[flux] auth/billing error, skipping retries:", normalized.message);
+        return { error: "fal_auth", status: 402 };
+      }
+
       console.warn(
         `[flux] attempt ${attempt}/${IMAGE_MAX_ATTEMPTS} failed:`,
-        (err as Error).message
+        normalized.message
       );
     }
   }
 
   console.error(
     "[flux] all attempts failed, returning placeholder. Last error:",
-    lastError
+    lastError?.message
   );
   return getPlaceholderUrl(year);
 }
