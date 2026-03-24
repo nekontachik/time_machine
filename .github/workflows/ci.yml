@@ -58,7 +58,43 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-  # ── 3. Unit & API Tests (with coverage + summary) ────────────────────────
+  # ── 3. Production Build (smoke test) ─────────────────────────────────────
+  build:
+    name: "🏗️ Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Next.js production build
+        id: next_build
+        run: npm run build
+        continue-on-error: true
+
+      - name: Write build summary
+        if: always()
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          OUTCOME="${{ steps.next_build.outcome }}"
+          ICON=$( [ "$OUTCOME" = "success" ] && echo "✅" || echo "❌" )
+
+          echo "## 🏗️ Production Build — $DATE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "$ICON \`next build\` **$OUTCOME**" >> $GITHUB_STEP_SUMMARY
+
+      # Fail the job only after writing the summary
+      - name: Fail if build failed
+        if: steps.next_build.outcome == 'failure'
+        run: exit 1
+
+  # ── 4. Unit & API Tests (with coverage + summary) ────────────────────────
   unit-tests:
     name: "🧪 Unit & API Tests"
     runs-on: ubuntu-latest
@@ -274,7 +310,7 @@ EOF
   summary:
     name: "📋 Report"
     runs-on: ubuntu-latest
-    needs: [lint, type-check, unit-tests, e2e-desktop, e2e-mobile]
+    needs: [lint, type-check, build, unit-tests, e2e-desktop, e2e-mobile]
     if: always()
     steps:
       - name: Write final pipeline report
@@ -283,6 +319,7 @@ EOF
 
           LINT="${{ needs.lint.result }}"
           TYPES="${{ needs.type-check.result }}"
+          BUILD="${{ needs.build.result }}"
           UNIT="${{ needs.unit-tests.result }}"
           E2E_D="${{ needs.e2e-desktop.result }}"
           E2E_M="${{ needs.e2e-mobile.result }}"
@@ -298,7 +335,7 @@ EOF
           }
 
           # Overall status — E2E failures are reported but don't block merge
-          if [ "$LINT" = "success" ] && [ "$TYPES" = "success" ] && [ "$UNIT" = "success" ]; then
+          if [ "$LINT" = "success" ] && [ "$TYPES" = "success" ] && [ "$BUILD" = "success" ] && [ "$UNIT" = "success" ]; then
             OVERALL="✅ Core pipeline passed"
           else
             OVERALL="❌ Core pipeline failed"
@@ -310,11 +347,12 @@ EOF
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Lint           | $(icon $LINT) \`$LINT\`  |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔷 TypeScript     | $(icon $TYPES) \`$TYPES\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 Unit & API     | $(icon $UNIT) \`$UNIT\`  |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🖥️ E2E Desktop    | $(icon $E2E_D) \`$E2E_D\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📱 E2E Mobile     | $(icon $E2E_M) \`$E2E_M\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Lint           | $(icon $LINT) \`$LINT\`    |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔷 TypeScript     | $(icon $TYPES) \`$TYPES\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ Build          | $(icon $BUILD) \`$BUILD\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit & API     | $(icon $UNIT) \`$UNIT\`    |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🖥️ E2E Desktop    | $(icon $E2E_D) \`$E2E_D\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 E2E Mobile     | $(icon $E2E_M) \`$E2E_M\`  |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "_Run [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · \`${{ github.ref_name }}\` · \`${GITHUB_SHA::7}\`_" >> $GITHUB_STEP_SUMMARY
