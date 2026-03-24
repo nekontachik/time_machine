@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createVideoTask } from "@/lib/video-providers/kling";
+import { buildMotionPrompt } from "@/lib/ai/video-prompt";
 import { getClientIp } from "@/lib/infrastructure/rate-limit";
 import { isPremium } from "@/lib/premium";
 import type { VideoGenerationInput } from "@/lib/video-providers/kling";
@@ -10,8 +11,13 @@ import type { VideoGenerationInput } from "@/lib/video-providers/kling";
 
 interface VideoCreateRequest {
   imageUrl: string;
-  prompt: string;
   duration?: 5 | 10;
+  // Preferred: pass scenario context so the server builds a proper Kling prompt
+  scenarioText?: string;
+  eventName?: string;
+  year?: number;
+  // Legacy fallback: pre-built prompt from the client
+  prompt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,11 +48,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { imageUrl, prompt, duration = 5 } = body;
+  const { imageUrl, duration = 5, scenarioText, eventName, year, prompt } = body;
 
-  if (!imageUrl || !prompt) {
+  if (!imageUrl) {
     return NextResponse.json(
-      { taskId: null, status: "failed", error: "imageUrl and prompt are required" },
+      { taskId: null, status: "failed", error: "imageUrl is required" },
       { status: 400 }
     );
   }
@@ -58,12 +64,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const input: VideoGenerationInput = { imageUrl, prompt, duration };
+  // Build a Kling-optimised motion prompt server-side when scenario context
+  // is provided; otherwise fall back to the legacy client-supplied prompt.
+  let motionPrompt: string;
+  if (scenarioText && year !== undefined) {
+    motionPrompt = buildMotionPrompt(
+      eventName ?? scenarioText.slice(0, 80),
+      scenarioText,
+      year
+    );
+  } else if (prompt) {
+    motionPrompt = prompt;
+  } else {
+    return NextResponse.json(
+      { taskId: null, status: "failed", error: "Provide scenarioText+year or prompt" },
+      { status: 400 }
+    );
+  }
+
+  console.log("[video/create] motion prompt:", motionPrompt);
+
+  const input: VideoGenerationInput = { imageUrl, prompt: motionPrompt, duration };
 
   try {
     const result = await createVideoTask(input);
     return NextResponse.json({
       ...result,
+      motionPrompt, // return for debugging
       generationTimeMs: result.generationTimeMs ?? Date.now() - startMs,
     });
   } catch (err) {

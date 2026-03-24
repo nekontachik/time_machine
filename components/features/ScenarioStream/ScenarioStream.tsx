@@ -10,7 +10,7 @@ interface Props {
 type VideoStatus = "idle" | "pending" | "processing" | "completed" | "failed";
 
 const VIDEO_POLL_INTERVAL_MS = 3000;
-const VIDEO_MAX_POLLS = 30; // 90 s timeout
+const VIDEO_MAX_POLLS = 40; // 40 × 3 s = 120 s — covers Kling 2.0 typical range
 
 export default function ScenarioStream({ request }: Props) {
   const [text, setText] = useState("");
@@ -44,7 +44,7 @@ export default function ScenarioStream({ request }: Props) {
   const pollVideo = useCallback((taskId: string) => {
     if (pollCountRef.current >= VIDEO_MAX_POLLS) {
       setVideoStatus("failed");
-      setVideoError("Video generation timed out.");
+      setVideoError("Video generation timed out. Try again.");
       return;
     }
     pollCountRef.current += 1;
@@ -73,22 +73,28 @@ export default function ScenarioStream({ request }: Props) {
 
   // ── Generate video ───────────────────────────────────────────────────────
   async function handleGenerateVideo() {
-    if (!imageUrl) return;
+    if (!imageUrl || !request) return;
 
     setVideoStatus("pending");
     setVideoUrl(null);
     setVideoError(null);
     pollCountRef.current = 0;
 
-    const prompt = textRef.current
-      ? `Cinematic motion: ${textRef.current.slice(0, 200).replace(/\n/g, " ")}`
-      : "Slow cinematic camera movement, dramatic lighting, epic historical scene.";
+    // Extract first event name as context for the motion prompt (server-side)
+    const firstEvent = request.events.find((e) => e.selected);
 
     try {
       const res = await fetch("/api/video/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl, prompt, duration: 5 }),
+        body: JSON.stringify({
+          imageUrl,
+          duration: 5,
+          // Pass scenario context — server calls buildMotionPrompt() for Kling
+          scenarioText: textRef.current.slice(0, 400),
+          eventName: firstEvent?.title ?? "",
+          year: request.year,
+        }),
       });
 
       if (!res.ok) {
@@ -175,6 +181,8 @@ export default function ScenarioStream({ request }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey]);
 
+  // ── Render ───────────────────────────────────────────────────────────────
+
   if (error) {
     return (
       <div className="rounded-xl border border-red-800 bg-red-900/20 p-4 text-red-300">
@@ -211,18 +219,50 @@ export default function ScenarioStream({ request }: Props) {
     .replace(/__(.+?)__/g, "$1")
     .replace(/_(.+?)_/g, "$1");
 
+  const videoInProgress = videoStatus === "pending" || videoStatus === "processing";
+
   return (
     <div className="space-y-6">
-      {/* Generated image + video controls */}
+      {/* Generated image + video section */}
       {imageUrl && !imageUrl.startsWith("/placeholder") && (
         <div className="space-y-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={`Alternative history ${request?.year ?? ""}`}
-            className="w-full rounded-xl border border-gray-700 object-cover animate-fade-in"
-          />
+          {/* Image — also acts as visual placeholder while video is generating */}
+          <div className="relative rounded-xl overflow-hidden border border-gray-700">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={`Alternative history ${request?.year ?? ""}`}
+              className={`w-full object-cover animate-fade-in transition-opacity duration-300 ${videoInProgress ? "opacity-60" : "opacity-100"}`}
+            />
 
+            {/* Overlay spinner while video is rendering */}
+            {videoInProgress && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
+                <span className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-violet-400" />
+                <p className="text-sm font-medium text-white drop-shadow">
+                  {videoStatus === "pending" ? "Starting video generation…" : "Rendering video…"}
+                </p>
+                <p className="text-xs text-gray-300 drop-shadow">
+                  Kling 2.0 · typically 60–120 s
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Completed video — replaces image */}
+          {videoStatus === "completed" && videoUrl && (
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full rounded-xl border border-gray-700"
+            />
+          )}
+
+          {/* Controls row */}
           {videoStatus === "idle" && (
             <button
               onClick={handleGenerateVideo}
@@ -230,13 +270,6 @@ export default function ScenarioStream({ request }: Props) {
             >
               <span>🎬</span> Generate Video
             </button>
-          )}
-
-          {(videoStatus === "pending" || videoStatus === "processing") && (
-            <p className="flex items-center gap-2 text-sm text-gray-400">
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
-              {videoStatus === "pending" ? "Starting video generation…" : "Rendering video…"}
-            </p>
           )}
 
           {videoStatus === "failed" && (
@@ -249,18 +282,6 @@ export default function ScenarioStream({ request }: Props) {
                 Retry
               </button>
             </div>
-          )}
-
-          {videoStatus === "completed" && videoUrl && (
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full rounded-xl border border-gray-700"
-            />
           )}
         </div>
       )}
