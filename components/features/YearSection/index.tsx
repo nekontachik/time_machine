@@ -12,8 +12,7 @@ export default function YearSection() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const displayYear =
-    year < 0 ? `${Math.abs(year)} BCE` : year.toString();
+  const displayYear = year.toString();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,7 +52,7 @@ export default function YearSection() {
         />
 
         <div className="flex w-full justify-between text-xs text-gray-400">
-          <span>3000 BCE</span>
+          <span>-3000</span>
           <span>2024</span>
         </div>
 

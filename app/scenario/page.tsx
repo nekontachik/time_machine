@@ -25,12 +25,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const eventTitle = searchParams.eventTitle ?? null;
   const isEn = lang === "en";
 
-  const bce = isEn ? "BCE" : "до н.е.";
-  const displayYear = !isNaN(year)
-    ? year < 0
-      ? `${Math.abs(year)} ${bce}`
-      : String(year)
-    : "";
+  const displayYear = !isNaN(year) ? String(year) : "";
 
   // Title: "Що якби X не сталося? | Time Machine" when event title is available,
   // otherwise fall back to the year-based generic title.
@@ -88,12 +83,7 @@ export default function ScenarioPage({ searchParams }: Props) {
     // malformed events param — leave request undefined, show placeholder
   }
 
-  const bce = isEn ? "BCE" : "до н.е.";
-  const displayYear = !isNaN(year)
-    ? year < 0
-      ? `${Math.abs(year)} ${bce}`
-      : String(year)
-    : "";
+  const displayYear = !isNaN(year) ? String(year) : "";
 
   const title = isEn ? "Alternative History" : "Альтернативна історія";
   const generating = isEn ? "Generating..." : "Генерація...";

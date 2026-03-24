@@ -39,7 +39,7 @@ export default async function EventsPage({ params, searchParams }: Props) {
         });
   }
 
-  const displayYear = year < 0 ? `${Math.abs(year)} BCE` : String(year);
+  const displayYear = String(year);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
