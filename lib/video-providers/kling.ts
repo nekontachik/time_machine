@@ -11,7 +11,9 @@ import "server-only";
  *   2. fal.queue.status() → poll until COMPLETED or failed
  *   3. fal.queue.result() → fetch the video URL
  *
- * Mock mode activates when FAL_KEY is absent.
+ * Mock mode activates when FAL_KEY is absent OR when MOCK_VIDEO=true.
+ * Set MOCK_VIDEO=true in .env.local to test the UI flow without spending
+ * fal.ai credits, even when FAL_KEY is present for image generation.
  */
 
 import { fal } from "@fal-ai/client";
@@ -21,8 +23,11 @@ import { VIDEO_MODEL as MODEL } from "@/constants";
 // Configuration
 // ---------------------------------------------------------------------------
 
-// Mock when no FAL_KEY configured
-const USE_MOCK = !process.env.FAL_KEY || process.env.FAL_KEY.trim() === "";
+// Mock when no FAL_KEY configured, or when explicitly requested via env flag
+const USE_MOCK =
+  !process.env.FAL_KEY ||
+  process.env.FAL_KEY.trim() === "" ||
+  process.env.MOCK_VIDEO === "true";
 
 // Ensure fal is configured (credentials also set in lib/ai/image.ts,
 // but we set it here too for safety)
