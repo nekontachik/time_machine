@@ -40,7 +40,16 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-  # ── 2. TypeScript ────────────────────────────────────────────────────────
+  # ── 2. Server-only boundary check ────────────────────────────────────────
+  server-only-check:
+    name: "🔒 Server-only boundary"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check all lib/ files have import "server-only"
+        run: bash scripts/check-server-only.sh
+
+  # ── 3. TypeScript ────────────────────────────────────────────────────────
   type-check:
     name: "🔷 TypeScript"
     runs-on: ubuntu-latest
@@ -310,7 +319,7 @@ EOF
   summary:
     name: "📋 Report"
     runs-on: ubuntu-latest
-    needs: [lint, type-check, build, unit-tests, e2e-desktop, e2e-mobile]
+    needs: [lint, server-only-check, type-check, build, unit-tests, e2e-desktop, e2e-mobile]
     if: always()
     steps:
       - name: Write final pipeline report
@@ -318,6 +327,7 @@ EOF
           DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
 
           LINT="${{ needs.lint.result }}"
+          SERVER_ONLY="${{ needs.server-only-check.result }}"
           TYPES="${{ needs.type-check.result }}"
           BUILD="${{ needs.build.result }}"
           UNIT="${{ needs.unit-tests.result }}"
@@ -335,7 +345,7 @@ EOF
           }
 
           # Overall status — E2E failures are reported but don't block merge
-          if [ "$LINT" = "success" ] && [ "$TYPES" = "success" ] && [ "$BUILD" = "success" ] && [ "$UNIT" = "success" ]; then
+          if [ "$LINT" = "success" ] && [ "$SERVER_ONLY" = "success" ] && [ "$TYPES" = "success" ] && [ "$BUILD" = "success" ] && [ "$UNIT" = "success" ]; then
             OVERALL="✅ Core pipeline passed"
           else
             OVERALL="❌ Core pipeline failed"
@@ -347,8 +357,9 @@ EOF
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Lint           | $(icon $LINT) \`$LINT\`    |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔷 TypeScript     | $(icon $TYPES) \`$TYPES\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Lint           | $(icon $LINT) \`$LINT\`            |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Server-only    | $(icon $SERVER_ONLY) \`$SERVER_ONLY\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔷 TypeScript     | $(icon $TYPES) \`$TYPES\`          |" >> $GITHUB_STEP_SUMMARY
           echo "| 🏗️ Build          | $(icon $BUILD) \`$BUILD\`  |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 Unit & API     | $(icon $UNIT) \`$UNIT\`    |" >> $GITHUB_STEP_SUMMARY
           echo "| 🖥️ E2E Desktop    | $(icon $E2E_D) \`$E2E_D\`  |" >> $GITHUB_STEP_SUMMARY

@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Motion prompt generator for Kling AI image-to-video.
  *
