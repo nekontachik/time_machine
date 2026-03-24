@@ -10,7 +10,6 @@ const nextConfig = {
       "@fal-ai/client",
       "ioredis",
       "openai",
-      "server-only",
     ],
   },
   images: {
