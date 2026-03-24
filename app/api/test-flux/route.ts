@@ -43,12 +43,15 @@ export async function POST(req: NextRequest) {
   const prompt = buildFluxPrompt(event, scenario, year)
   const start = Date.now()
 
-  const imageUrl = await generateScenarioImage(scenario, year, "cinematic", event)
-
+  const result = await generateScenarioImage(scenario, year, "cinematic", event)
   const generationTimeMs = Date.now() - start
 
+  if (typeof result === "object" && "error" in result) {
+    return NextResponse.json({ error: result.error }, { status: result.status })
+  }
+
   return NextResponse.json({
-    imageUrl,
+    imageUrl: result,
     prompt,
     generationTimeMs,
     model: "fal-ai/flux/schnell",

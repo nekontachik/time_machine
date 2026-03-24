@@ -92,7 +92,7 @@ export default function ScenarioStream({ request }: Props) {
           duration: 5,
           // Pass scenario context — server calls buildMotionPrompt() for Kling
           scenarioText: textRef.current.slice(0, 400),
-          eventName: firstEvent?.title ?? "",
+          eventName: firstEvent?.id ?? "",
           year: request.year,
         }),
       });

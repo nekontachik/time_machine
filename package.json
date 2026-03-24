@@ -16,7 +16,9 @@
     "test:e2e:desktop": "playwright test --config config/playwright.config.ts --project=chromium",
     "test:e2e:mobile": "playwright test --config config/playwright.config.ts --project=mobile",
     "test:e2e:ui": "playwright test --config config/playwright.config.ts --ui",
-    "check:server-only": "bash scripts/check-server-only.sh"
+    "check:server-only": "bash scripts/check-server-only.sh",
+    "test:component": "vitest run --config config/vitest.component.config.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.4",
@@ -32,6 +34,9 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.49.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -39,7 +44,9 @@
     "@vitest/coverage-v8": "^2.1.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "husky": "^9.1.7",
     "ioredis-mock": "^8.13.1",
+    "jsdom": "^29.0.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",

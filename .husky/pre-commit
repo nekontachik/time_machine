@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+# Pre-commit hook — runs fast quality checks before every commit.
+# To skip in emergencies: git commit --no-verify (and explain why in the PR).
+
+set -e
+
+echo "🔒 Checking server-only boundaries..."
+npm run check:server-only
+
+echo "🔷 Running TypeScript type check..."
+npx tsc --noEmit
+
+echo "✅ Pre-commit checks passed."
