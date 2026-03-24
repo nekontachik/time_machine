@@ -3,30 +3,22 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { MIN_YEAR, MAX_YEAR } from "@/constants";
 
 const StarField = dynamic(() => import("@/components/layout/StarField"), { ssr: false });
 
 export default function YearSection() {
-  const t = useTranslations("home");
   const [year, setYear] = useState(1969);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const displayYear =
-    year < 0 ? `${Math.abs(year)} ${t("bceLabel")}` : year.toString();
+    year < 0 ? `${Math.abs(year)} BCE` : year.toString();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    // Read locale from cookie to pass correct lang param to API
-    const locale =
-      typeof document !== "undefined"
-        ? document.cookie.match(/locale=([^;]+)/)?.[1] ?? "uk"
-        : "uk";
-    const lang = locale === "en" ? "en" : "ua";
-    router.push(`/events/${year}?lang=${lang}`);
+    router.push(`/events/${year}?lang=en`);
   }
 
   return (
@@ -61,7 +53,7 @@ export default function YearSection() {
         />
 
         <div className="flex w-full justify-between text-xs text-gray-400">
-          <span>3000 {t("bceLabel")}</span>
+          <span>3000 BCE</span>
           <span>2024</span>
         </div>
 
@@ -82,7 +74,7 @@ export default function YearSection() {
           {loading && (
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
           )}
-          {loading ? t("loading") : t("viewEvents")}
+          {loading ? "Loading..." : "View Events"}
         </button>
       </form>
     </div>

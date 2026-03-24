@@ -1,10 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-
 export default function HomeSubtitle() {
-  const t = useTranslations("home");
   return (
-    <p className="mb-12 text-center text-lg text-gray-400">{t("subtitle")}</p>
+    <p className="mb-12 text-center text-lg text-gray-400">
+      Pick a year — change history — see the alternative future
+    </p>
   );
 }

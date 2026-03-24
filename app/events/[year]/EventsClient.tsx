@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import EventCard from "@/components/features/EventCard/EventCard";
 import type { HistoricalEvent } from "@/types";
 
@@ -13,7 +12,6 @@ interface Props {
 }
 
 export default function EventsClient({ events, year, lang }: Props) {
-  const t = useTranslations("events");
   // true = happened (default), false = didn't happen
   const [toggles, setToggles] = useState<Record<string, boolean>>(
     Object.fromEntries(events.map((e) => [e.id, true]))
@@ -34,7 +32,7 @@ export default function EventsClient({ events, year, lang }: Props) {
       happened: toggles[e.id] ?? true,
     }));
     // Pass the title of the first "didn't happen" event so the scenario page
-    // can use it in OG meta tags ("Що якби X не сталося?")
+    // can use it in OG meta tags
     const firstUntoggled = events.find((e) => !(toggles[e.id] ?? true));
     const query = new URLSearchParams({
       year: String(year),
@@ -72,7 +70,7 @@ export default function EventsClient({ events, year, lang }: Props) {
             ) : (
               <span>🚀</span>
             )}
-            {generating ? t("generating") : t("generate")}
+            {generating ? "Generating..." : "Generate Scenario"}
           </button>
         </div>
       )}

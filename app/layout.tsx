@@ -1,12 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { cookies } from "next/headers";
-import { NextIntlClientProvider } from "next-intl";
-import LanguageToggle from "@/components/layout/LanguageToggle";
 import InstallPrompt from "@/components/layout/InstallPrompt";
 import ServiceWorkerRegister from "@/components/layout/ServiceWorkerRegister";
-
-type Locale = "uk" | "en";
 
 export const metadata: Metadata = {
   title: "Time Machine — AI Alternative History",
@@ -38,30 +33,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const raw = cookies().get("locale")?.value;
-  const locale: Locale = raw === "en" ? "en" : "uk";
-  const messages = (await import(`../messages/${locale}.json`)).default;
-
   return (
-    <html lang={locale === "uk" ? "uk" : "en"}>
+    <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <header className="fixed right-4 top-4 z-40">
-            <LanguageToggle locale={locale} />
-          </header>
-          {children}
-          <InstallPrompt />
-          <ServiceWorkerRegister />
-        </NextIntlClientProvider>
+        {children}
+        <InstallPrompt />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

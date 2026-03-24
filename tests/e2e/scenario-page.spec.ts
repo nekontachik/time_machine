@@ -12,7 +12,7 @@ import {
 } from "./helpers/mock-api";
 
 const VALID_PARAMS =
-  "year=1969&lang=ua&events=" +
+  "year=1969&lang=en&events=" +
   encodeURIComponent(
     JSON.stringify([
       { id: "1", happened: false },
@@ -163,10 +163,10 @@ test.describe("Scenario page — image loading", () => {
     await mockScenarioAPI(page, "Rome was never founded.");
     await mockImageAPIWithPlaceholder(page, -753); // ancient era
     await page.goto(
-      `year=-753&lang=ua&events=${encodeURIComponent(
+      `year=-753&lang=en&events=${encodeURIComponent(
         JSON.stringify([{ id: "1", happened: false }])
       )}`
-        ? `/scenario?year=-753&lang=ua&events=${encodeURIComponent(
+        ? `/scenario?year=-753&lang=en&events=${encodeURIComponent(
             JSON.stringify([{ id: "1", happened: false }])
           )}`
         : `/scenario?${VALID_PARAMS}`

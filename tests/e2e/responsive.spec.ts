@@ -25,7 +25,7 @@ test.describe("Mobile-specific layout @mobile", () => {
   });
 
   test("events page has no horizontal scroll", async ({ page }) => {
-    await page.goto("/events/1969?lang=ua&e2e_mock=1");
+    await page.goto("/events/1969?lang=en&e2e_mock=1");
     await page.waitForSelector(".rounded-xl.border");
     const scrollWidth = await page.evaluate(
       () => document.documentElement.scrollWidth
@@ -52,7 +52,7 @@ test.describe("Mobile-specific layout @mobile", () => {
   test("event toggle buttons meet minimum tap target size (44×44 px)", async ({
     page,
   }) => {
-    await page.goto("/events/1969?lang=ua&e2e_mock=1");
+    await page.goto("/events/1969?lang=en&e2e_mock=1");
     const cards = page.locator(".rounded-xl.border");
     await expect(cards.first()).toBeVisible();
     const toggleBtn = cards

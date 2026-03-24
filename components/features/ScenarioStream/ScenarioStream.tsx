@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
 import type { ScenarioRequest } from "@/types";
 
 interface Props {
@@ -10,7 +9,6 @@ interface Props {
 
 
 export default function ScenarioStream({ request }: Props) {
-  const t = useTranslations("scenario");
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +95,7 @@ export default function ScenarioStream({ request }: Props) {
   if (error) {
     return (
       <div className="rounded-xl border border-red-800 bg-red-900/20 p-4 text-red-300">
-        {t("errorPrefix")} {error}
+        Error: {error}
       </div>
     );
   }
@@ -108,7 +106,7 @@ export default function ScenarioStream({ request }: Props) {
       <div className="space-y-4">
         <p className="flex items-center gap-2 text-sm text-gray-400">
           <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
-          {t("generating")}
+          Generating history
         </p>
         <div className="rounded-xl border border-gray-700 bg-gray-800/40 p-6 space-y-3">
           <div className="h-4 w-3/4 animate-pulse rounded bg-gray-700" />
@@ -121,7 +119,7 @@ export default function ScenarioStream({ request }: Props) {
   }
 
   if (!text && !loading) {
-    return <p className="text-gray-500">{t("placeholder")}</p>;
+    return <p className="text-gray-500">Select events and click &quot;Generate Scenario&quot;.</p>;
   }
 
   const stripped = text
@@ -135,6 +133,7 @@ export default function ScenarioStream({ request }: Props) {
     <div className="space-y-6">
       {/* Image — only rendered when a real (non-placeholder) URL is ready */}
       {imageUrl && !imageUrl.startsWith("/placeholder") && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl}
           alt={`Alternative history ${request?.year ?? ""}`}
@@ -147,7 +146,7 @@ export default function ScenarioStream({ request }: Props) {
         {loading && (
           <p className="mb-3 flex items-center gap-2 text-sm text-gray-400">
             <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
-            {t("generating")}
+            Generating history
           </p>
         )}
         <p className="whitespace-pre-wrap leading-relaxed text-gray-200">

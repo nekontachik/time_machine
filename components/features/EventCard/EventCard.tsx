@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import type { HistoricalEvent } from "@/types";
 
 interface Props {
@@ -16,8 +15,6 @@ const impactColors: Record<string, string> = {
 };
 
 export default function EventCard({ event, onToggle, happened = true }: Props) {
-  const t = useTranslations("events");
-
   return (
     <div
       className={`rounded-xl border p-5 transition-all ${
@@ -49,7 +46,7 @@ export default function EventCard({ event, onToggle, happened = true }: Props) {
                 : "bg-gray-700 text-gray-400 hover:bg-gray-600"
             }`}
           >
-            {t("happened")}
+            ✓ Happened
           </button>
           <button
             onClick={() => onToggle(event.id, false)}
@@ -59,7 +56,7 @@ export default function EventCard({ event, onToggle, happened = true }: Props) {
                 : "bg-gray-700 text-gray-400 hover:bg-gray-600"
             }`}
           >
-            {t("didNotHappen")}
+            ✗ Didn&apos;t happen
           </button>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const EVENTS_URL = "/events/1969?lang=ua&e2e_mock=1";
+const EVENTS_URL = "/events/1969?lang=en&e2e_mock=1";
 
 test.describe("Events page", () => {
   test.beforeEach(async ({ page }) => {

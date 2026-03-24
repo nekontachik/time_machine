@@ -11,7 +11,7 @@ interface Props {
   searchParams: { lang?: string; e2e_mock?: string };
 }
 
-function useE2EMock(searchParams: { e2e_mock?: string }): boolean {
+function checkE2EMock(searchParams: { e2e_mock?: string }): boolean {
   if (process.env.E2E_MOCK_EVENTS === "true") return true;
   if (searchParams.e2e_mock === "1") return true;
   return cookies().get("e2e_mock_events")?.value === "1";
@@ -19,13 +19,13 @@ function useE2EMock(searchParams: { e2e_mock?: string }): boolean {
 
 export default async function EventsPage({ params, searchParams }: Props) {
   const year = parseInt(params.year, 10);
-  const lang = searchParams.lang ?? "ua";
+  const lang = searchParams.lang ?? "en";
 
   if (isNaN(year) || year < -3000 || year > 2024) {
     notFound();
   }
 
-  const useMock = useE2EMock(searchParams);
+  const useMock = checkE2EMock(searchParams);
   let events: HistoricalEvent[];
   if (useMock) {
     events = MOCK_EVENTS;
@@ -39,15 +39,12 @@ export default async function EventsPage({ params, searchParams }: Props) {
         });
   }
 
-  const isEn = lang === "en";
-  const bce = isEn ? "BCE" : "до н.е.";
-  const yearSuffix = isEn ? "" : " рік";
-  const displayYear = year < 0 ? `${Math.abs(year)} ${bce}` : String(year);
+  const displayYear = year < 0 ? `${Math.abs(year)} BCE` : String(year);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
       <h2 className="mb-8 text-3xl font-bold text-white">
-        {displayYear}{yearSuffix}
+        {displayYear}
       </h2>
       <EventsClient events={events} year={year} lang={lang} />
     </main>

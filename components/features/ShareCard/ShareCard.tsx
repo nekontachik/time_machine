@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
 
 interface Props {
   year?: number;
@@ -10,11 +9,10 @@ interface Props {
 }
 
 export default function ShareCard({ year, summary, imageUrl }: Props) {
-  const t = useTranslations("shareCard");
   const [copied, setCopied] = useState(false);
 
   const url = typeof window !== "undefined" ? window.location.href : "";
-  const text = `${t("altHistory")} ${year ?? ""}`;
+  const text = `Alternative History ${year ?? ""}`;
 
   async function handleCopy() {
     try {
@@ -57,20 +55,20 @@ export default function ShareCard({ year, summary, imageUrl }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-gray-400">
           {year && <span className="font-semibold text-white">{year} </span>}
-          {t("altReality")}
+          Alternative Reality
         </p>
         <div className="flex gap-2">
           <button
             onClick={handleTelegram}
             className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-            title={t("shareTelegram")}
+            title="Share on Telegram"
           >
             Telegram
           </button>
           <button
             onClick={handleTwitter}
             className="rounded-lg bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
-            title={t("shareTwitter")}
+            title="Share on Twitter/X"
           >
             Twitter / X
           </button>
@@ -78,7 +76,7 @@ export default function ShareCard({ year, summary, imageUrl }: Props) {
             onClick={handleCopy}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
           >
-            {copied ? t("copied") : t("share")}
+            {copied ? "Copied!" : "Share"}
           </button>
         </div>
       </div>

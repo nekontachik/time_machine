@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -9,7 +8,6 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function InstallPrompt() {
-  const t = useTranslations("installPrompt");
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
@@ -43,18 +41,18 @@ export default function InstallPrompt() {
 
   return (
     <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-gray-700 bg-gray-900 px-6 py-3 shadow-2xl">
-      <span className="text-sm text-gray-200">{t("message")}</span>
+      <span className="text-sm text-gray-200">Install the app for quick access</span>
       <button
         onClick={handleInstall}
         className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
       >
-        {t("install")}
+        Install
       </button>
       <button
         onClick={handleDismiss}
         className="text-sm text-gray-500 hover:text-gray-300"
       >
-        {t("dismiss")}
+        Not now
       </button>
     </div>
   );
