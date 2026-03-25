@@ -118,7 +118,10 @@ async function realPollTask(taskId: string): Promise<VideoGenerationResult> {
     logs: false,
   });
 
-  const falStatus = statusResponse.status; // "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED"
+  // fal.ai can also return "FAILED" at runtime even though it's not in the TS types
+  const falStatus = statusResponse.status as string;
+
+  console.log(`[kling-fal] poll taskId=${taskId} falStatus=${falStatus}`);
 
   if (falStatus === "COMPLETED") {
     // Fetch the actual result
@@ -129,11 +132,24 @@ async function realPollTask(taskId: string): Promise<VideoGenerationResult> {
     const data = result.data as { video?: { url?: string } };
     const videoUrl = data?.video?.url;
 
+    console.log(`[kling-fal] completed taskId=${taskId} videoUrl=${videoUrl}`);
+
     return {
       taskId,
       status: videoUrl ? "completed" : "failed",
       videoUrl,
       error: videoUrl ? undefined : "No video URL in response",
+      generationTimeMs: Date.now() - startMs,
+    };
+  }
+
+  // Handle explicit failure from fal.ai
+  if (falStatus === "FAILED" || falStatus === "ERROR") {
+    console.error(`[kling-fal] task failed taskId=${taskId} status=${falStatus}`);
+    return {
+      taskId,
+      status: "failed",
+      error: `fal.ai reported status: ${falStatus}`,
       generationTimeMs: Date.now() - startMs,
     };
   }

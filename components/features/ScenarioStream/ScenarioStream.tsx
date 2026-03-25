@@ -10,7 +10,7 @@ interface Props {
 type VideoStatus = "idle" | "pending" | "processing" | "completed" | "failed";
 
 const VIDEO_POLL_INTERVAL_MS = 3000;
-const VIDEO_MAX_POLLS = 40; // 40 × 3 s = 120 s — covers Kling 2.0 typical range
+const VIDEO_MAX_POLLS = 60; // 60 × 3 s = 180 s — covers Kling 2.5-turbo (15–30 s typical, 90 s max)
 
 export default function ScenarioStream({ request }: Props) {
   const [text, setText] = useState("");
@@ -19,6 +19,7 @@ export default function ScenarioStream({ request }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const textRef = useRef("");
+  const imageRequestedRef = useRef(false);
 
   // ── Video state ──────────────────────────────────────────────────────────
   const [videoStatus, setVideoStatus] = useState<VideoStatus>("idle");
@@ -124,6 +125,7 @@ export default function ScenarioStream({ request }: Props) {
     setText("");
     setError(null);
     textRef.current = "";
+    imageRequestedRef.current = false;
 
     (async () => {
       try {
@@ -148,6 +150,28 @@ export default function ScenarioStream({ request }: Props) {
           const chunk = decoder.decode(value, { stream: true });
           textRef.current += chunk;
           setText((prev) => prev + chunk);
+
+          // Start image generation as soon as we have ~300 chars —
+          // no need to wait for the full scenario to finish streaming.
+          if (
+            !imageRequestedRef.current &&
+            textRef.current.length >= 300 &&
+            request?.year !== undefined
+          ) {
+            imageRequestedRef.current = true;
+            const summary = textRef.current.slice(0, 400);
+            fetch("/api/image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ scenarioSummary: summary, year: request.year, style: "cinematic" }),
+            })
+              .then((r) => r.ok ? r.json() : null)
+              .then((data) => {
+                const d = data as { imageUrl?: string } | null;
+                if (!ignore && d?.imageUrl) setImageUrl(d.imageUrl);
+              })
+              .catch(() => {/* silently ignore image errors */});
+          }
         }
       } catch (err) {
         if (!ignore && (err as Error).name !== "AbortError") {
@@ -156,7 +180,10 @@ export default function ScenarioStream({ request }: Props) {
       } finally {
         if (!ignore) {
           setLoading(false);
-          if (textRef.current && request?.year) {
+          // Image generation was already kicked off mid-stream (after ~300 chars).
+          // If for some reason it wasn't started yet (very short scenario), start now.
+          if (!imageRequestedRef.current && textRef.current && request?.year !== undefined) {
+            imageRequestedRef.current = true;
             const summary = textRef.current.slice(0, 400);
             fetch("/api/image", {
               method: "POST",
@@ -226,31 +253,8 @@ export default function ScenarioStream({ request }: Props) {
       {/* Generated image + video section */}
       {imageUrl && !imageUrl.startsWith("/placeholder") && (
         <div className="space-y-3">
-          {/* Image — also acts as visual placeholder while video is generating */}
-          <div className="relative rounded-xl overflow-hidden border border-gray-700">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={`Alternative history ${request?.year ?? ""}`}
-              className={`w-full object-cover animate-fade-in transition-opacity duration-300 ${videoInProgress ? "opacity-60" : "opacity-100"}`}
-            />
-
-            {/* Overlay spinner while video is rendering */}
-            {videoInProgress && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
-                <span className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-violet-400" />
-                <p className="text-sm font-medium text-white drop-shadow">
-                  {videoStatus === "pending" ? "Starting video generation…" : "Rendering video…"}
-                </p>
-                <p className="text-xs text-gray-300 drop-shadow">
-                  Kling 2.0 · typically 60–120 s
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Completed video — replaces image */}
-          {videoStatus === "completed" && videoUrl && (
+          {/* When video is ready — show ONLY the video */}
+          {videoStatus === "completed" && videoUrl ? (
             <video
               src={videoUrl}
               controls
@@ -258,8 +262,31 @@ export default function ScenarioStream({ request }: Props) {
               loop
               muted
               playsInline
-              className="w-full rounded-xl border border-gray-700"
+              className="w-full rounded-xl border border-gray-700 animate-fade-in"
             />
+          ) : (
+            /* Image — acts as placeholder while video is generating or not started */
+            <div className="relative rounded-xl overflow-hidden border border-gray-700">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={`Alternative history ${request?.year ?? ""}`}
+                className={`w-full object-cover animate-fade-in transition-opacity duration-300 ${videoInProgress ? "opacity-60" : "opacity-100"}`}
+              />
+
+              {/* Overlay spinner while video is rendering */}
+              {videoInProgress && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
+                  <span className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-violet-400" />
+                  <p className="text-sm font-medium text-white drop-shadow">
+                    {videoStatus === "pending" ? "Starting video generation…" : "Rendering video…"}
+                  </p>
+                  <p className="text-xs text-gray-300 drop-shadow">
+                    Kling 2.5 Turbo · typically 15–30 s
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Controls row */}
