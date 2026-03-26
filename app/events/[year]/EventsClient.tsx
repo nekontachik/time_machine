@@ -85,6 +85,9 @@ export default function EventsClient({ events, year, lang }: Props) {
       {/* ── Event cards (staggered reveal) ──────────────────────────────── */}
       {step !== "year-reveal" && (
         <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-400 mb-4 text-right">
+            {events.filter((e) => toggles[e.id] !== true).length} of {events.length} events reviewed
+          </p>
           {events.map((event, i) => (
             <div
               key={event.id}
@@ -93,6 +96,7 @@ export default function EventsClient({ events, year, lang }: Props) {
             >
               <EventCard
                 event={event}
+                rank={i + 1}
                 happened={toggles[event.id] ?? true}
                 onToggle={step === "choice" ? handleToggle : undefined}
               />

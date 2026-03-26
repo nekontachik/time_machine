@@ -8,6 +8,8 @@ export interface HistoricalEvent {
   description: string;
   impact: ImpactLevel;
   wikipediaUrl?: string;
+  thumbnail?: string;
+  sourceUrl?: string;
 }
 
 export interface EventToggle {

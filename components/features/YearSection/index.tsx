@@ -4,15 +4,28 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MIN_YEAR, MAX_YEAR } from "@/constants";
+import { formatYear } from "@/lib/formatYear";
 
 const StarField = dynamic(() => import("@/components/layout/StarField"), { ssr: false });
+
+function getEraLabel(year: number): string {
+  if (year < -500) return "Ancient World";
+  if (year < 500) return "Classical Era";
+  if (year < 1400) return "Middle Ages";
+  if (year < 1700) return "Renaissance";
+  if (year < 1900) return "Industrial Age";
+  if (year < 1945) return "World Wars";
+  if (year < 1990) return "Cold War";
+  return "Modern Era";
+}
 
 export default function YearSection() {
   const [year, setYear] = useState(1969);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const displayYear = year.toString();
+  const displayYear = formatYear(year);
+  const eraLabel = getEraLabel(year);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +50,9 @@ export default function YearSection() {
         style={{ zIndex: 1 }}
       >
         <div className="text-center">
+          <p className="text-sm font-medium text-indigo-400 tracking-widest uppercase mb-2 transition-opacity duration-300">
+            {eraLabel}
+          </p>
           <span className="text-7xl font-bold tabular-nums text-white drop-shadow-lg">
             {displayYear}
           </span>
@@ -51,9 +67,9 @@ export default function YearSection() {
           className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700 accent-indigo-500"
         />
 
-        <div className="flex w-full justify-between text-xs text-gray-400">
-          <span>-3000</span>
-          <span>2024</span>
+        <div className="flex w-full justify-between text-xs text-gray-500">
+          <span>3000 BC · Ancient World</span>
+          <span>2024 · Modern Era</span>
         </div>
 
         <input
@@ -73,7 +89,7 @@ export default function YearSection() {
           {loading && (
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
           )}
-          {loading ? "Loading..." : "View Events"}
+          {loading ? "Loading..." : `Travel to ${formatYear(year)}`}
         </button>
       </form>
     </div>

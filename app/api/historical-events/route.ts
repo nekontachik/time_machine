@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateEvents } from "@/lib/ai/text";
+import { generateEventTitles, enrichEventWithContext } from "@/lib/ai/text";
 import { findWikipediaUrl } from "@/lib/ai/search";
+import { searchEventContext } from "@/lib/tavily";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
 import type { EventsResponse, HistoricalEvent } from "@/types";
 
@@ -25,14 +26,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ year, events: cached as HistoricalEvent[] } satisfies EventsResponse);
     }
 
-    const raw = await generateEvents(year, lang);
+    // 1. Generate 3 event titles via AI
+    const raw = await generateEventTitles(year, lang);
     const yearLabel = year < 0 ? `${Math.abs(year)} BCE` : year.toString();
+
+    // 2. For each event: fetch Tavily context + Wikipedia URL in parallel
     const events = await Promise.all(
-      raw.map(async (e) => ({
-        ...e,
-        wikipediaUrl: (await findWikipediaUrl(`${e.title} ${yearLabel}`)) ?? undefined,
-      }))
+      raw.map(async (e) => {
+        const [tavily, wikipediaUrl] = await Promise.all([
+          searchEventContext(e.title, year),
+          findWikipediaUrl(`${e.title} ${yearLabel}`).then(u => u ?? undefined),
+        ]);
+
+        // 3. Rewrite description using real Tavily snippets (if any)
+        const description =
+          tavily.snippets.length > 0
+            ? await enrichEventWithContext(e, tavily.snippets.join("\n\n"), lang)
+            : e.description;
+
+        return {
+          ...e,
+          description,
+          thumbnail: tavily.imageUrl,
+          sourceUrl: tavily.sourceUrl,
+          wikipediaUrl,
+        };
+      })
     );
+
     await setCachedEvents(year, lang, events);
 
     return NextResponse.json({ year, events } satisfies EventsResponse);

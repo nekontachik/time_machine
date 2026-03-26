@@ -5,6 +5,7 @@ import { generateEvents } from "@/lib/ai/text";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
 import { MOCK_EVENTS } from "@/tests/fixtures/events";
 import type { HistoricalEvent } from "@/types";
+import { formatYear } from "@/lib/formatYear";
 
 interface Props {
   params: { year: string };
@@ -39,12 +40,10 @@ export default async function EventsPage({ params, searchParams }: Props) {
         });
   }
 
-  const displayYear = String(year);
-
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
       <h2 className="mb-8 text-3xl font-bold text-white">
-        {displayYear}
+        {formatYear(year)}
       </h2>
       <EventsClient events={events} year={year} lang={lang} />
     </main>

@@ -282,16 +282,16 @@ export default function ScenarioStream({ request }: Props) {
           )}
 
           {/* Controls row */}
-          {videoStatus === "idle" && (
+          {/* {videoStatus === "idle" && (
             <button
               onClick={handleGenerateVideo}
               className="flex items-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 transition-colors"
             >
               <span>🎬</span> Generate Video
             </button>
-          )}
+          )} */}
 
-          {videoStatus === "failed" && (
+          {/* {videoStatus === "failed" && (
             <div className="flex items-center gap-3">
               <p className="text-sm text-red-400">{videoError ?? "Video generation failed."}</p>
               <button
@@ -301,7 +301,7 @@ export default function ScenarioStream({ request }: Props) {
                 Retry
               </button>
             </div>
-          )}
+          )} */}
         </div>
       )}
 

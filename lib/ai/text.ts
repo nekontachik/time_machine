@@ -16,7 +16,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-export async function generateEvents(
+export async function generateEventTitles(
   year: number,
   lang: string
 ): Promise<HistoricalEvent[]> {
@@ -24,7 +24,7 @@ export async function generateEvents(
 
   const response = await client.chat.completions.create({
     model: EVENTS_MODEL,
-    max_tokens: 1024,
+    max_tokens: 512,
     messages: [
       {
         role: "system",
@@ -33,7 +33,7 @@ export async function generateEvents(
       },
       {
         role: "user",
-        content: `Return a JSON array of exactly 5 key events from the year ${yearLabel}.
+        content: `Return a JSON array of exactly 3 key events from the year ${yearLabel}.
 Rules:
 - Cover diverse domains: politics, science/tech, culture, military, social/economic — not all the same type.
 - Each description must be 2–3 sentences: what happened, why it mattered, what it changed.
@@ -51,6 +51,41 @@ Format: [{"id":"1","title":"...","description":"...","impact":"high|medium|low"}
 
   const clean = text.replace(/```json\n?|\n?```/g, "").trim();
   return JSON.parse(clean) as HistoricalEvent[];
+}
+
+export async function enrichEventWithContext(
+  event: HistoricalEvent,
+  tavilySnippets: string,
+  lang: string
+): Promise<string> {
+  const response = await client.chat.completions.create({
+    model: EVENTS_MODEL,
+    max_tokens: 256,
+    messages: [
+      {
+        role: "system",
+        content: "You are a precise historian. Write only what sources confirm.",
+      },
+      {
+        role: "user",
+        content: `Event: ${event.title}
+Real source snippets: ${tavilySnippets}
+Write a factual 2-sentence description in language: ${lang}.
+Include the specific date if found in snippets. No speculation.`,
+      },
+    ],
+  });
+
+  const text = response.choices[0]?.message?.content;
+  if (!text) throw new Error("Empty response from model");
+  return text.trim();
+}
+
+export async function generateEvents(
+  year: number,
+  lang: string
+): Promise<HistoricalEvent[]> {
+  return generateEventTitles(year, lang);
 }
 
 export async function streamScenario({

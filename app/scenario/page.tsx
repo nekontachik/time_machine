@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import ScenarioStream from "@/components/features/ScenarioStream/ScenarioStream";
 // import ShareCard from "@/components/ShareCard/ShareCard";
 import type { ScenarioRequest, Lang } from "@/types";
+import { formatYear } from "@/lib/formatYear";
 
 interface Props {
   searchParams: {
@@ -83,7 +84,7 @@ export default function ScenarioPage({ searchParams }: Props) {
     // malformed events param — leave request undefined, show placeholder
   }
 
-  const displayYear = !isNaN(year) ? String(year) : "";
+  const displayYear = !isNaN(year) ? formatYear(year) : "";
 
   const title = isEn ? "Alternative History" : "Альтернативна історія";
   const generating = isEn ? "Generating..." : "Генерація...";
@@ -99,7 +100,12 @@ export default function ScenarioPage({ searchParams }: Props) {
         ← {backLabel}
       </Link>
       <h2 className="mb-8 text-3xl font-bold text-white">
-        {title}{displayYear ? ` — ${displayYear}` : ""}
+        {title}
+        {displayYear && (
+          <span className="block text-xl font-normal text-gray-400">
+            Year {displayYear}
+          </span>
+        )}
       </h2>
       <Suspense fallback={<p className="text-gray-400">{generating}</p>}>
         <ScenarioStream request={request} />

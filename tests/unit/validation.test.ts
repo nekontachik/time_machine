@@ -12,6 +12,16 @@ vi.stubEnv("OPENROUTER_API_KEY", "test-key");
 
 vi.mock("@/lib/ai/text", () => ({
   generateEvents: vi.fn().mockResolvedValue([]),
+  generateEventTitles: vi.fn().mockResolvedValue([]),
+  enrichEventWithContext: vi.fn().mockResolvedValue(""),
+}));
+
+vi.mock("@/lib/tavily", () => ({
+  searchEventContext: vi.fn().mockResolvedValue({ snippets: [], imageUrl: undefined, sourceUrl: undefined }),
+}));
+
+vi.mock("@/lib/ai/search", () => ({
+  findWikipediaUrl: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/infrastructure/cache", () => ({

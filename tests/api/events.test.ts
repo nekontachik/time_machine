@@ -10,9 +10,21 @@ vi.mock("@/lib/ai/text", () => ({
     { id: "1", title: "Moon Landing", description: "First human on the moon", impact: "high" },
     { id: "2", title: "Woodstock", description: "Music festival", impact: "medium" },
     { id: "3", title: "Internet born", description: "ARPANET first message", impact: "high" },
-    { id: "4", title: "Concorde", description: "First supersonic flight", impact: "medium" },
-    { id: "5", title: "Stonewall", description: "Stonewall riots", impact: "high" },
   ]),
+  generateEventTitles: vi.fn().mockResolvedValue([
+    { id: "1", title: "Moon Landing", description: "First human on the moon", impact: "high" },
+    { id: "2", title: "Woodstock", description: "Music festival", impact: "medium" },
+    { id: "3", title: "Internet born", description: "ARPANET first message", impact: "high" },
+  ]),
+  enrichEventWithContext: vi.fn().mockImplementation((event: { description: string }) => Promise.resolve(event.description)),
+}));
+
+vi.mock("@/lib/tavily", () => ({
+  searchEventContext: vi.fn().mockResolvedValue({ snippets: [], imageUrl: undefined, sourceUrl: undefined }),
+}));
+
+vi.mock("@/lib/ai/search", () => ({
+  findWikipediaUrl: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/infrastructure/cache", () => ({
@@ -61,7 +73,7 @@ describe("GET /api/historical-events", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.year).toBe(1969);
-    expect(body.events).toHaveLength(5);
+    expect(body.events).toHaveLength(3);
     expect(body.events[0]).toHaveProperty("id");
     expect(body.events[0]).toHaveProperty("title");
   });
@@ -82,5 +94,41 @@ describe("GET /api/historical-events", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.year).toBe(-500);
+  });
+
+  it("events include thumbnail and sourceUrl keys (may be undefined)", async () => {
+    const req = new Request(
+      "http://localhost:3000/api/historical-events?year=1969&lang=en"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    for (const event of body.events) {
+      expect(event).toHaveProperty("id");
+      expect(event).toHaveProperty("title");
+      expect(event).toHaveProperty("description");
+      expect(event).toHaveProperty("impact");
+    }
+  });
+
+  it("uses Tavily enriched description when snippets are returned", async () => {
+    const { searchEventContext } = await import("@/lib/tavily");
+    const { enrichEventWithContext } = await import("@/lib/ai/text");
+    vi.mocked(searchEventContext).mockResolvedValueOnce({
+      snippets: ["On July 20, 1969, Neil Armstrong stepped onto the lunar surface."],
+      imageUrl: "https://example.com/moon.jpg",
+      sourceUrl: "https://example.com/moon",
+    });
+    vi.mocked(enrichEventWithContext).mockResolvedValueOnce("Enriched description.");
+
+    const req = new Request(
+      "http://localhost:3000/api/historical-events?year=1969&lang=en"
+    );
+    const res = await GET(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.events[0].description).toBe("Enriched description.");
+    expect(body.events[0].thumbnail).toBe("https://example.com/moon.jpg");
+    expect(body.events[0].sourceUrl).toBe("https://example.com/moon");
   });
 });
