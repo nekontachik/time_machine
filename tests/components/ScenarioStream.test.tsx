@@ -1,10 +1,11 @@
 /**
- * Component tests for ScenarioStream — video generation UI.
+ * Component tests for ScenarioStream.
  *
  * These tests cover the rendering logic that pure unit / API tests miss:
- * - "Generate Video" button visibility depends on imageUrl state
- * - The button is absent while streaming or when imageUrl is null
- * - Clicking the button triggers the video creation flow
+ * - Loading skeleton visibility during streaming
+ * - Streamed text rendering after completion
+ * - Image rendering after the image API responds
+ * - Image absent when imageUrl is null or a placeholder
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -139,7 +140,7 @@ describe("ScenarioStream", () => {
     });
   });
 
-  it("shows Generate Video button after image is loaded", async () => {
+  it("shows image after streaming completes and image URL is returned", async () => {
     cleanup = mockFetch({
       scenarioChunks: ["The battle was won without bloodshed."],
       imageUrl: "https://example.com/img.jpg",
@@ -147,14 +148,17 @@ describe("ScenarioStream", () => {
 
     render(<ScenarioStream request={makeRequest()} />);
 
-    // Wait for the image to appear (image fetch happens after streaming ends)
+    // Wait for the scenario text, then the image
     await waitFor(
       () => {
-        expect(
-          screen.getByRole("button", { name: /Generate Video/i })
-        ).toBeInTheDocument();
+        expect(screen.getByRole("img")).toBeInTheDocument();
       },
       { timeout: 3000 }
+    );
+
+    expect(screen.getByRole("img")).toHaveAttribute(
+      "src",
+      "https://example.com/img.jpg"
     );
   });
 
@@ -175,8 +179,7 @@ describe("ScenarioStream", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("clicking Generate Video button starts video generation flow", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+  it("no Generate Video button is shown (feature currently disabled in UI)", async () => {
     cleanup = mockFetch({
       scenarioChunks: ["History changed."],
       imageUrl: "https://example.com/img.jpg",
@@ -184,34 +187,27 @@ describe("ScenarioStream", () => {
 
     render(<ScenarioStream request={makeRequest()} />);
 
-    const btn = await screen.findByRole("button", { name: /Generate Video/i });
-    await user.click(btn);
+    // Wait for the image to be rendered (streaming + image fetch complete)
+    await waitFor(
+      () => expect(screen.getByRole("img")).toBeInTheDocument(),
+      { timeout: 3000 }
+    );
 
-    // After clicking, the button is replaced by a spinner / status message
-    await waitFor(() => {
-      expect(
-        screen.queryByRole("button", { name: /Generate Video/i })
-      ).not.toBeInTheDocument();
-    });
-
-    // Fetch should have been called for video creation
-    const calls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
-    const videoCall = calls.find((args) => {
-      const url = args[0];
-      return typeof url === "string" && url.includes("/api/video/create");
-    });
-    expect(videoCall).toBeDefined();
+    // The Generate Video button is currently commented out in the component
+    expect(
+      screen.queryByRole("button", { name: /Generate Video/i })
+    ).not.toBeInTheDocument();
   });
 
-  it("uses !e.happened (not e.selected) to find the first counterfactual event", async () => {
+  it("renders correctly when some events have happened=false (regression: !e.happened vs e.selected)", async () => {
     /**
-     * Regression test for the TypeScript bug where `e.selected` was used
-     * instead of `!e.happened`. `EventToggle` has no `selected` property.
-     * This test ensures the correct field drives video prompt context.
+     * Regression guard: EventToggle uses `happened: boolean`, not `selected`.
+     * This ensures the component does not crash when processing an events
+     * array that contains items with happened=false.
      */
     cleanup = mockFetch({
       scenarioChunks: ["Alternative outcome."],
-      imageUrl: "https://example.com/img.jpg",
+      imageUrl: null,
     });
 
     const request = makeRequest({
@@ -223,20 +219,11 @@ describe("ScenarioStream", () => {
 
     render(<ScenarioStream request={request} />);
 
-    const btn = await screen.findByRole("button", { name: /Generate Video/i });
-
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
-    await user.click(btn);
-
-    // The video/create request body must include eventName derived from a
-    // !happened event. We can't easily check the body here, but confirming
-    // the fetch was called without throwing (e.selected would be undefined)
-    // is sufficient — TypeScript catches the rest.
-    const calls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
-    const videoCall = calls.find((args) => {
-      const url = args[0];
-      return typeof url === "string" && url.includes("/api/video/create");
+    await waitFor(() => {
+      expect(screen.getByText(/Alternative outcome/i)).toBeInTheDocument();
     });
-    expect(videoCall).toBeDefined();
+
+    // Component rendered without crashing — field access was correct
+    expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
   });
 });

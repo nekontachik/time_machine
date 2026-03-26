@@ -15,9 +15,7 @@ test.describe("Home page", () => {
 
   test("navigates to events page when a year is submitted", async ({ page }) => {
     await page.goto("/");
-    const button = page.getByRole("button", {
-      name: /переглянути події|view events/i,
-    });
+    const button = page.getByRole("button", { name: /Travel to/i });
     await button.click();
     await page.waitForURL(/\/events\//);
     expect(page.url()).toContain("/events/");

@@ -9,7 +9,26 @@ set -euo pipefail
 LIB_DIR="$(cd "$(dirname "$0")/.." && pwd)/lib"
 VIOLATIONS=()
 
+# Pure utility files that are safe to import from client components.
+# These must NOT have server-only (would break client bundles).
+EXCLUDED_PATTERNS=(
+  "lib/formatYear.ts"
+)
+
+is_excluded() {
+  local file="$1"
+  for pattern in "${EXCLUDED_PATTERNS[@]}"; do
+    if [[ "$file" == *"$pattern" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 while IFS= read -r -d '' file; do
+  if is_excluded "$file"; then
+    continue
+  fi
   # Check if the very first non-empty, non-comment line is `import "server-only"`
   first_import=$(grep -m 1 'import ' "$file" 2>/dev/null || true)
   if [[ "$first_import" != *'import "server-only"'* ]]; then

@@ -16,6 +16,7 @@
     "test:e2e:desktop": "playwright test --config config/playwright.config.ts --project=chromium",
     "test:e2e:mobile": "playwright test --config config/playwright.config.ts --project=mobile",
     "test:e2e:ui": "playwright test --config config/playwright.config.ts --ui",
+    "test:e2e:smoke": "playwright test --config config/playwright.config.ts tests/e2e/smoke.spec.ts",
     "check:server-only": "bash scripts/check-server-only.sh",
     "test:component": "vitest run --config config/vitest.component.config.ts",
     "prepare": "husky"
@@ -48,7 +49,7 @@
     "eslint-config-next": "14.2.35",
     "husky": "^9.1.7",
     "ioredis-mock": "^8.13.1",
-    "jsdom": "^29.0.1",
+    "jsdom": "^25.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",

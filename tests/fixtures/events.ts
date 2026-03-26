@@ -29,13 +29,13 @@ export const MOCK_EVENTS: HistoricalEvent[] = [
   {
     id: "4",
     title: "Concorde Flight",
-    description: "First supersonic passenger flight",
+    description: "First commercial supersonic passenger flight",
     impact: "medium",
   },
   {
     id: "5",
     title: "Stonewall Riots",
-    description: "LGBTQ+ rights movement",
+    description: "Uprising that sparked the modern LGBTQ rights movement",
     impact: "low",
   },
 ];

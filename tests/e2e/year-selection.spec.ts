@@ -33,7 +33,7 @@ test.describe("Year selection", () => {
 
     await slider.fill("-500");
     await expect(yearDisplay).toContainText("500");
-    await expect(yearDisplay).toContainText(/до н\.е\.|BCE/);
+    await expect(yearDisplay).toContainText(/BC/);
   });
 
   test("boundary values: min -3000, max 2024, zero", async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe("Year selection", () => {
     await page.goto("/");
     const slider = page.locator('input[type="range"]');
     const button = page.getByRole("button", {
-      name: /переглянути події|view events/i,
+      name: /Travel to/i,
     });
 
     await slider.fill("1969");
@@ -69,7 +69,7 @@ test.describe("Year selection", () => {
   test("submit button shows loading state after click", async ({ page }) => {
     await page.goto("/");
     const button = page.getByRole("button", {
-      name: /переглянути події|view events/i,
+      name: /Travel to/i,
     });
 
     await button.click();
