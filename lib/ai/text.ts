@@ -27,10 +27,21 @@ export async function generateEvents(
     max_tokens: 1024,
     messages: [
       {
+        role: "system",
+        content:
+          "You are a meticulous historian and science communicator. Return only valid JSON, no markdown.",
+      },
+      {
         role: "user",
-        content: `You are a historian. Return ONLY valid JSON array of 5 key events for year ${yearLabel}.
-Format: [{"id":"1","title":"...","description":"...","impact":"high|medium|low"}]
-Language: ${lang}. No markdown, no preamble.`,
+        content: `Return a JSON array of exactly 5 key events from the year ${yearLabel}.
+Rules:
+- Cover diverse domains: politics, science/tech, culture, military, social/economic — not all the same type.
+- Each description must be 2–3 sentences: what happened, why it mattered, what it changed.
+- Include the specific date (month + day) when known, embedded naturally in the description.
+- Impact: "high" = shaped a decade or more; "medium" = notable regional/global effect; "low" = culturally significant but limited direct consequence.
+- Sort by impact descending.
+- Output language: ${lang}.
+Format: [{"id":"1","title":"...","description":"...","impact":"high|medium|low"}]`,
       },
     ],
   });
@@ -63,10 +74,26 @@ export async function streamScenario({
     stream: true,
     messages: [
       {
+        role: "system",
+        content:
+          "You are a literary alternative history writer in the tradition of Robert Cowley and Harry Turtledove. Write with cinematic specificity: real names, exact dates, concrete places.",
+      },
+      {
         role: "user",
-        content: `You are an alternative history writer. Given year ${year} and these changes: ${changes},
-write a vivid 3-paragraph alternative history scenario in ${lang}.${localContext}
-Write in engaging narrative style. Start immediately, no preamble.`,
+        content: `Year: ${year}. Changed events: ${changes}.
+
+Write an alternative history in exactly 3 paragraphs. Output language: ${lang}.
+
+Paragraph 1 — The Divergence (immediate, weeks to months after the change):
+Describe the precise moment the timeline splits. Name specific people, institutions, and places. Show the first concrete consequence that nobody expected.
+
+Paragraph 2 — The Cascade (1–20 years later):
+Follow the butterfly effect. What alliances shift? Which technologies accelerate or stall? Name a city that rose or fell, a leader who gained power or was never born, a war that did or didn't happen.
+
+Paragraph 3 — The World Today (present day, 2025 in this timeline):
+Describe how the world looks now. What does the average person's life feel like? What exists that doesn't in our timeline — or what is missing that we take for granted?${localContext} End with one haunting detail.
+
+Start immediately with Paragraph 1. No preamble, no headers, no markdown.`,
       },
     ],
   });

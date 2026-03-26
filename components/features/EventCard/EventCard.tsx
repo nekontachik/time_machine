@@ -33,9 +33,19 @@ export default function EventCard({ event, onToggle, happened = true }: Props) {
           {event.impact}
         </span>
       </div>
-      <p className="mb-4 text-sm leading-relaxed text-gray-400">
+      <p className="mb-2 text-sm leading-relaxed text-gray-400">
         {event.description}
       </p>
+      {event.wikipediaUrl && (
+        <a
+          href={event.wikipediaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 inline-block text-xs text-indigo-400 hover:underline"
+        >
+          → Wikipedia
+        </a>
+      )}
       {onToggle && (
         <div className="flex gap-2">
           <button

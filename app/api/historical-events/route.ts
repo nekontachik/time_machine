@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateEvents } from "@/lib/ai/text";
+import { findWikipediaUrl } from "@/lib/ai/search";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
 import type { EventsResponse, HistoricalEvent } from "@/types";
 
@@ -24,7 +25,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ year, events: cached as HistoricalEvent[] } satisfies EventsResponse);
     }
 
-    const events = await generateEvents(year, lang);
+    const raw = await generateEvents(year, lang);
+    const yearLabel = year < 0 ? `${Math.abs(year)} BCE` : year.toString();
+    const events = await Promise.all(
+      raw.map(async (e) => ({
+        ...e,
+        wikipediaUrl: (await findWikipediaUrl(`${e.title} ${yearLabel}`)) ?? undefined,
+      }))
+    );
     await setCachedEvents(year, lang, events);
 
     return NextResponse.json({ year, events } satisfies EventsResponse);

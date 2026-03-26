@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "text/plain; charset=utf-8",
         "X-RateLimit-Remaining": remaining.toString(),
         "Transfer-Encoding": "chunked",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (err) {

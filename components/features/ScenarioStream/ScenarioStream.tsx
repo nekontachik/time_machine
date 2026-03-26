@@ -127,6 +127,22 @@ export default function ScenarioStream({ request }: Props) {
     textRef.current = "";
     imageRequestedRef.current = false;
 
+    function requestImage(summary: string, year: number) {
+      if (imageRequestedRef.current) return;
+      imageRequestedRef.current = true;
+      fetch("/api/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenarioSummary: summary, year, style: "cinematic" }),
+      })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          const d = data as { imageUrl?: string } | null;
+          if (!ignore && d?.imageUrl) setImageUrl(d.imageUrl);
+        })
+        .catch(() => {});
+    }
+
     (async () => {
       try {
         const res = await fetch("/api/scenario", {
@@ -158,19 +174,7 @@ export default function ScenarioStream({ request }: Props) {
             textRef.current.length >= 300 &&
             request?.year !== undefined
           ) {
-            imageRequestedRef.current = true;
-            const summary = textRef.current.slice(0, 400);
-            fetch("/api/image", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ scenarioSummary: summary, year: request.year, style: "cinematic" }),
-            })
-              .then((r) => r.ok ? r.json() : null)
-              .then((data) => {
-                const d = data as { imageUrl?: string } | null;
-                if (!ignore && d?.imageUrl) setImageUrl(d.imageUrl);
-              })
-              .catch(() => {/* silently ignore image errors */});
+            requestImage(textRef.current.slice(0, 400), request.year);
           }
         }
       } catch (err) {
@@ -183,19 +187,7 @@ export default function ScenarioStream({ request }: Props) {
           // Image generation was already kicked off mid-stream (after ~300 chars).
           // If for some reason it wasn't started yet (very short scenario), start now.
           if (!imageRequestedRef.current && textRef.current && request?.year !== undefined) {
-            imageRequestedRef.current = true;
-            const summary = textRef.current.slice(0, 400);
-            fetch("/api/image", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ scenarioSummary: summary, year: request.year, style: "cinematic" }),
-            })
-              .then((r) => r.ok ? r.json() : null)
-              .then((data) => {
-                const d = data as { imageUrl?: string } | null;
-                if (!ignore && d?.imageUrl) setImageUrl(d.imageUrl);
-              })
-              .catch(() => {/* silently ignore image errors */});
+            requestImage(textRef.current.slice(0, 400), request.year);
           }
         }
       }
