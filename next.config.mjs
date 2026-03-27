@@ -1,4 +1,5 @@
 import withPWA from "next-pwa";
+import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -36,7 +37,29 @@ const nextConfig = {
   },
 };
 
-export default withPWA({
+const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
 })(nextConfig);
+
+export default withSentryConfig(pwaConfig, {
+  // Sentry org + project — set via Vercel env vars
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Source map upload — only runs when SENTRY_AUTH_TOKEN is present (CI/Vercel)
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Suppress Sentry build output for cleaner CI logs
+  silent: true,
+
+  // Auto-instrument Next.js API routes, pages, and middleware
+  autoInstrumentServerFunctions: true,
+  autoInstrumentMiddleware: true,
+
+  // Disable telemetry
+  telemetry: false,
+
+  // Tree-shake Sentry debug code in production builds
+  disableLogger: true,
+});

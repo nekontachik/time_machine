@@ -50,7 +50,7 @@ export default function InstallPrompt() {
       </button>
       <button
         onClick={handleDismiss}
-        className="text-sm text-gray-500 hover:text-gray-300"
+        className="text-sm text-gray-400 hover:text-gray-200"
       >
         Not now
       </button>
