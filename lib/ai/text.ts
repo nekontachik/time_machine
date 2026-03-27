@@ -2,6 +2,8 @@ import "server-only";
 import OpenAI from "openai";
 import type { HistoricalEvent } from "@/types";
 import { EVENTS_MODEL, SCENARIO_MODEL } from "@/constants";
+import { searchEventContext } from "@/lib/tavily";
+import { findWikipediaUrl } from "@/lib/ai/search";
 
 /**
  * Text generation via OpenRouter.
@@ -85,7 +87,32 @@ export async function generateEvents(
   year: number,
   lang: string
 ): Promise<HistoricalEvent[]> {
-  return generateEventTitles(year, lang);
+  const yearLabel = year < 0 ? `${Math.abs(year)} BCE` : year.toString();
+  const raw = await generateEventTitles(year, lang);
+
+  const events = await Promise.all(
+    raw.map(async (e) => {
+      const [tavilyResult, wikipediaUrl] = await Promise.all([
+        searchEventContext(e.title, year),
+        findWikipediaUrl(`${e.title} ${yearLabel}`).then((u) => u ?? undefined),
+      ]);
+
+      const description =
+        tavilyResult.snippets.length > 0
+          ? await enrichEventWithContext(e, tavilyResult.snippets.join("\n\n"), lang)
+          : e.description;
+
+      return {
+        ...e,
+        description,
+        thumbnail: tavilyResult.imageUrl,
+        sourceUrl: tavilyResult.sourceUrl,
+        wikipediaUrl,
+      };
+    })
+  );
+
+  return events;
 }
 
 export async function streamScenario({

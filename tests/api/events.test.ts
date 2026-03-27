@@ -111,15 +111,20 @@ describe("GET /api/historical-events", () => {
     }
   });
 
-  it("uses Tavily enriched description when snippets are returned", async () => {
-    const { searchEventContext } = await import("@/lib/tavily");
-    const { enrichEventWithContext } = await import("@/lib/ai/text");
-    vi.mocked(searchEventContext).mockResolvedValueOnce({
-      snippets: ["On July 20, 1969, Neil Armstrong stepped onto the lunar surface."],
-      imageUrl: "https://example.com/moon.jpg",
-      sourceUrl: "https://example.com/moon",
-    });
-    vi.mocked(enrichEventWithContext).mockResolvedValueOnce("Enriched description.");
+  it("returns Tavily-enriched fields from generateEvents", async () => {
+    const { generateEvents } = await import("@/lib/ai/text");
+    vi.mocked(generateEvents).mockResolvedValueOnce([
+      {
+        id: "1",
+        title: "Moon Landing",
+        description: "Enriched description.",
+        impact: "high",
+        thumbnail: "https://example.com/moon.jpg",
+        sourceUrl: "https://example.com/moon",
+      },
+      { id: "2", title: "Woodstock", description: "Music festival", impact: "medium" },
+      { id: "3", title: "Internet born", description: "ARPANET first message", impact: "high" },
+    ]);
 
     const req = new Request(
       "http://localhost:3000/api/historical-events?year=1969&lang=en"

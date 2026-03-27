@@ -24,6 +24,21 @@ vi.mock("openai", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Mock Tavily dependencies used by generateEvents
+// ---------------------------------------------------------------------------
+
+const mockSearchEventContext = vi.fn();
+const mockFindWikipediaUrl = vi.fn();
+
+vi.mock("@/lib/tavily", () => ({
+  searchEventContext: (...args: unknown[]) => mockSearchEventContext(...args),
+}));
+
+vi.mock("@/lib/ai/search", () => ({
+  findWikipediaUrl: (...args: unknown[]) => mockFindWikipediaUrl(...args),
+}));
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -32,6 +47,12 @@ function makeCompletion(content: string) {
     choices: [{ message: { content } }],
   };
 }
+
+const RAW_EVENTS = [
+  { id: "1", title: "Moon Landing", description: "First human on the moon", impact: "high" as const },
+  { id: "2", title: "Woodstock", description: "Music festival", impact: "medium" as const },
+  { id: "3", title: "ARPANET", description: "First internet message", impact: "high" as const },
+];
 
 // ---------------------------------------------------------------------------
 // generateEventTitles
@@ -47,12 +68,7 @@ describe("generateEventTitles", () => {
   });
 
   it("parses JSON array from model response", async () => {
-    const events = [
-      { id: "1", title: "Moon Landing", description: "First human on the moon", impact: "high" },
-      { id: "2", title: "Woodstock", description: "Music festival", impact: "medium" },
-      { id: "3", title: "ARPANET", description: "First internet message", impact: "high" },
-    ];
-    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify(events)));
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify(RAW_EVENTS)));
 
     const result = await generateEventTitles(1969, "en");
 
@@ -82,7 +98,7 @@ describe("generateEventTitles", () => {
   it("uses BCE label for negative years in the prompt", async () => {
     mockCreate.mockResolvedValueOnce(makeCompletion("[]"));
 
-    await generateEventTitles(-753, "en").catch(() => {}); // may throw on empty array parse
+    await generateEventTitles(-753, "en").catch(() => {});
 
     const call = mockCreate.mock.calls[0][0];
     const userMessage = call.messages.find((m: { role: string }) => m.role === "user");
@@ -122,19 +138,112 @@ describe("enrichEventWithContext", () => {
 });
 
 // ---------------------------------------------------------------------------
-// generateEvents (backwards-compatibility shim)
+// generateEvents — full Tavily-enriched pipeline
 // ---------------------------------------------------------------------------
 
-describe("generateEvents (shim)", () => {
-  it("resolves and delegates to generateEventTitles", async () => {
-    vi.resetModules();
-    const events = [{ id: "1", title: "T", description: "D", impact: "low" }];
-    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify(events)));
+describe("generateEvents", () => {
+  let generateEvents: typeof import("@/lib/ai/text").generateEvents;
 
-    const { generateEvents } = await import("@/lib/ai/text");
+  beforeEach(async () => {
+    vi.resetModules();
+    mockCreate.mockReset();
+    mockSearchEventContext.mockReset();
+    mockFindWikipediaUrl.mockReset();
+
+    // Default Tavily mocks: no snippets, no Wikipedia
+    mockSearchEventContext.mockResolvedValue({ snippets: [] });
+    mockFindWikipediaUrl.mockResolvedValue(null);
+
+    ({ generateEvents } = await import("@/lib/ai/text"));
+  });
+
+  it("returns events with all original fields", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify(RAW_EVENTS)));
+
     const result = await generateEvents(1969, "en");
 
-    expect(result).toHaveLength(1);
-    expect(result[0].title).toBe("T");
+    expect(result).toHaveLength(3);
+    expect(result[0].id).toBe("1");
+    expect(result[0].title).toBe("Moon Landing");
+    expect(result[0].impact).toBe("high");
+  });
+
+  it("attaches thumbnail and sourceUrl from Tavily when available", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify([RAW_EVENTS[0]])));
+    mockSearchEventContext.mockResolvedValue({
+      snippets: ["Armstrong stepped on the moon on July 20, 1969."],
+      imageUrl: "https://example.com/moon.jpg",
+      sourceUrl: "https://example.com/moon",
+    });
+    // enrichEventWithContext call (second mockCreate)
+    mockCreate.mockResolvedValueOnce(makeCompletion("Enriched: Armstrong landed on the moon."));
+
+    const result = await generateEvents(1969, "en");
+
+    expect(result[0].thumbnail).toBe("https://example.com/moon.jpg");
+    expect(result[0].sourceUrl).toBe("https://example.com/moon");
+  });
+
+  it("uses enriched description when Tavily returns snippets", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify([RAW_EVENTS[0]])));
+    mockSearchEventContext.mockResolvedValue({
+      snippets: ["Real source snippet about the moon landing."],
+      imageUrl: undefined,
+      sourceUrl: undefined,
+    });
+    mockCreate.mockResolvedValueOnce(makeCompletion("Enriched description from snippets."));
+
+    const result = await generateEvents(1969, "en");
+
+    expect(result[0].description).toBe("Enriched description from snippets.");
+  });
+
+  it("keeps original description when Tavily returns no snippets (fail-open)", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify([RAW_EVENTS[0]])));
+    mockSearchEventContext.mockResolvedValue({ snippets: [] });
+
+    const result = await generateEvents(1969, "en");
+
+    // enrichEventWithContext should NOT be called → original description preserved
+    expect(result[0].description).toBe("First human on the moon");
+    // mockCreate should only have been called once (generateEventTitles)
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("attaches wikipediaUrl when findWikipediaUrl returns a URL", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify([RAW_EVENTS[0]])));
+    mockFindWikipediaUrl.mockResolvedValue("https://en.wikipedia.org/wiki/Apollo_11");
+
+    const result = await generateEvents(1969, "en");
+
+    expect(result[0].wikipediaUrl).toBe("https://en.wikipedia.org/wiki/Apollo_11");
+  });
+
+  it("leaves wikipediaUrl undefined when findWikipediaUrl returns null", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify([RAW_EVENTS[0]])));
+    mockFindWikipediaUrl.mockResolvedValue(null);
+
+    const result = await generateEvents(1969, "en");
+
+    expect(result[0].wikipediaUrl).toBeUndefined();
+  });
+
+  it("calls searchEventContext and findWikipediaUrl for each event", async () => {
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify(RAW_EVENTS)));
+
+    await generateEvents(1969, "en");
+
+    expect(mockSearchEventContext).toHaveBeenCalledTimes(3);
+    expect(mockFindWikipediaUrl).toHaveBeenCalledTimes(3);
+  });
+
+  it("passes BCE label to findWikipediaUrl for negative years", async () => {
+    const ancientEvent = [{ id: "1", title: "Fall of Rome", description: "Rome fell", impact: "high" as const }];
+    mockCreate.mockResolvedValueOnce(makeCompletion(JSON.stringify(ancientEvent)));
+
+    await generateEvents(-476, "en");
+
+    expect(mockFindWikipediaUrl).toHaveBeenCalledWith(expect.stringContaining("476 BCE"));
+    expect(mockFindWikipediaUrl).not.toHaveBeenCalledWith(expect.stringContaining("-476"));
   });
 });
