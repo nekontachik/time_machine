@@ -3,6 +3,103 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ScenarioRequest } from "@/types";
 
+// ── Scroll progress hook (0 → 1) ─────────────────────────────────────────────
+function useScrollProgress(): number {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(docHeight > 0 ? scrollTop / docHeight : 0);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return progress;
+}
+
+// ── Paragraph with viewport-reveal animation ─────────────────────────────────
+function RevealParagraph({ children }: { children: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.style.opacity = "1";
+          el.style.transform = "translateY(0)";
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <p
+      ref={ref}
+      style={{
+        opacity: 0,
+        transform: "translateY(20px)",
+        transition: "opacity 0.6s ease, transform 0.6s ease",
+        willChange: "opacity, transform",
+      }}
+      className="leading-relaxed text-gray-200 whitespace-pre-wrap"
+    >
+      {children}
+    </p>
+  );
+}
+
+// ── Image with blur-to-focus reveal ──────────────────────────────────────────
+function FocusImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+}) {
+  const ref = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.style.filter = "blur(0px)";
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [src]); // re-run when image URL changes (new generation)
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={ref}
+      src={src}
+      alt={alt}
+      className={className}
+      style={{
+        filter: "blur(20px)",
+        transition: "filter 1.4s ease",
+        willChange: "filter",
+      }}
+    />
+  );
+}
+
 interface Props {
   request?: ScenarioRequest;
 }
@@ -13,6 +110,8 @@ const VIDEO_POLL_INTERVAL_MS = 3000;
 const VIDEO_MAX_POLLS = 60; // 60 × 3 s = 180 s — covers Kling 2.5-turbo (15–30 s typical, 90 s max)
 
 export default function ScenarioStream({ request }: Props) {
+  const scrollProgress = useScrollProgress();
+
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,88 +337,122 @@ export default function ScenarioStream({ request }: Props) {
     .replace(/__(.+?)__/g, "$1")
     .replace(/_(.+?)_/g, "$1");
 
+  // Split into paragraphs for per-paragraph reveal (only after streaming ends)
+  const paragraphs = stripped.split(/\n\n+/).filter(Boolean);
+
   const videoInProgress = videoStatus === "pending" || videoStatus === "processing";
 
   return (
-    <div className="space-y-6">
-      {/* Generated image + video section */}
-      {imageUrl && !imageUrl.startsWith("/placeholder") && (
-        <div className="space-y-3">
-          {/* When video is ready — show ONLY the video */}
-          {videoStatus === "completed" && videoUrl ? (
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full rounded-xl border border-gray-700 animate-fade-in"
-            />
-          ) : (
-            /* Image — acts as placeholder while video is generating or not started */
-            <div className="relative rounded-xl overflow-hidden border border-gray-700">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt={`Alternative history ${request?.year ?? ""}`}
-                className={`w-full object-cover animate-fade-in transition-opacity duration-300 ${videoInProgress ? "opacity-60" : "opacity-100"}`}
-              />
+    <>
+      {/* ── Fixed gold progress bar ─────────────────────────────────────── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          height: "2px",
+          width: `${scrollProgress * 100}%`,
+          background: "#c9a84c",
+          boxShadow: "0 0 8px 2px rgba(201,168,76,0.6)",
+          zIndex: 9999,
+          transition: "width 0.1s linear",
+          pointerEvents: "none",
+        }}
+      />
 
-              {/* Overlay spinner while video is rendering */}
-              {videoInProgress && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
-                  <span className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-violet-400" />
-                  <p className="text-sm font-medium text-white drop-shadow">
-                    {videoStatus === "pending" ? "Starting video generation…" : "Rendering video…"}
-                  </p>
-                  <p className="text-xs text-gray-300 drop-shadow">
-                    Kling 2.5 Turbo · typically 15–30 s
-                  </p>
-                </div>
-              )}
-            </div>
+      <div className="space-y-6">
+        {/* ── Scenario text ────────────────────────────────────────────── */}
+        <div className="rounded-xl border border-gray-700 bg-gray-800/40 p-6">
+          {loading && (
+            <p className="mb-3 flex items-center gap-2 text-sm text-gray-400">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
+              Generating history
+            </p>
           )}
 
-          {/* Controls row */}
-          {/* {videoStatus === "idle" && (
-            <button
-              onClick={handleGenerateVideo}
-              className="flex items-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 transition-colors"
-            >
-              <span>🎬</span> Generate Video
-            </button>
-          )} */}
+          {loading ? (
+            /* While streaming — single block with blinking cursor (no reveal) */
+            <p className="whitespace-pre-wrap leading-relaxed text-gray-200">
+              {stripped}
+              <span className="ml-0.5 inline-block h-4 w-0.5 animate-blink bg-indigo-400" />
+            </p>
+          ) : (
+            /* After streaming — each paragraph reveals on scroll */
+            <div className="space-y-4">
+              {paragraphs.map((para, i) => (
+                <RevealParagraph key={i}>{para}</RevealParagraph>
+              ))}
+            </div>
+          )}
+        </div>
 
-          {/* {videoStatus === "failed" && (
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-red-400">{videoError ?? "Video generation failed."}</p>
+        {/* ── Generated image + video section ─────────────────────────── */}
+        {imageUrl && !imageUrl.startsWith("/placeholder") && (
+          <div className="space-y-3">
+            {/* When video is ready — show ONLY the video */}
+            {videoStatus === "completed" && videoUrl ? (
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full rounded-xl border border-gray-700 animate-fade-in"
+              />
+            ) : (
+              /* Image — blur-to-focus reveal; acts as placeholder while video generates */
+              <div className="relative rounded-xl overflow-hidden border border-gray-700">
+                <FocusImage
+                  src={imageUrl}
+                  alt={`Alternative history ${request?.year ?? ""}`}
+                  className={`w-full object-cover transition-opacity duration-300 ${
+                    videoInProgress ? "opacity-60" : "opacity-100"
+                  }`}
+                />
+
+                {/* Overlay spinner while video is rendering */}
+                {videoInProgress && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
+                    <span className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-violet-400" />
+                    <p className="text-sm font-medium text-white drop-shadow">
+                      {videoStatus === "pending"
+                        ? "Starting video generation…"
+                        : "Rendering video…"}
+                    </p>
+                    <p className="text-xs text-gray-300 drop-shadow">
+                      Kling 2.5 Turbo · typically 15–30 s
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Controls row */}
+            {/* {videoStatus === "idle" && (
               <button
                 onClick={handleGenerateVideo}
-                className="rounded-lg bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-600"
+                className="flex items-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 transition-colors"
               >
-                Retry
+                <span>🎬</span> Generate Video
               </button>
-            </div>
-          )} */}
-        </div>
-      )}
+            )} */}
 
-      {/* Scenario text */}
-      <div className="rounded-xl border border-gray-700 bg-gray-800/40 p-6">
-        {loading && (
-          <p className="mb-3 flex items-center gap-2 text-sm text-gray-400">
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
-            Generating history
-          </p>
+            {/* {videoStatus === "failed" && (
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-red-400">{videoError ?? "Video generation failed."}</p>
+                <button
+                  onClick={handleGenerateVideo}
+                  className="rounded-lg bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-600"
+                >
+                  Retry
+                </button>
+              </div>
+            )} */}
+          </div>
         )}
-        <p className="whitespace-pre-wrap leading-relaxed text-gray-200">
-          {stripped}
-          {loading && (
-            <span className="ml-0.5 inline-block h-4 w-0.5 animate-blink bg-indigo-400" />
-          )}
-        </p>
       </div>
-    </div>
+    </>
   );
 }
