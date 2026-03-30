@@ -3,20 +3,51 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ScenarioRequest } from "@/types";
 
-// ── Scroll progress hook (0 → 1) ─────────────────────────────────────────────
-function useScrollProgress(): number {
-  const [progress, setProgress] = useState(0);
+// ── Scroll progress bar — updates via ref (no React re-render) ──────────────
+function ScrollProgressBar() {
+  const barRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    let rafId: number | null = null;
+
     const onScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(docHeight > 0 ? scrollTop / docHeight : 0);
+      if (rafId !== null) return; // already scheduled
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const el = barRef.current;
+        if (!el) return;
+        const scrollTop = window.scrollY;
+        const docHeight =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? scrollTop / docHeight : 0;
+        el.style.width = `${progress * 100}%`;
+      });
     };
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
-  return progress;
+
+  return (
+    <div
+      ref={barRef}
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "2px",
+        width: "0%",
+        background: "#c9a84c",
+        boxShadow: "0 0 8px 2px rgba(201,168,76,0.6)",
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    />
+  );
 }
 
 // ── Paragraph with viewport-reveal animation ─────────────────────────────────
@@ -110,7 +141,6 @@ const VIDEO_POLL_INTERVAL_MS = 3000;
 const VIDEO_MAX_POLLS = 60; // 60 × 3 s = 180 s — covers Kling 2.5-turbo (15–30 s typical, 90 s max)
 
 export default function ScenarioStream({ request }: Props) {
-  const scrollProgress = useScrollProgress();
 
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -344,22 +374,8 @@ export default function ScenarioStream({ request }: Props) {
 
   return (
     <>
-      {/* ── Fixed gold progress bar ─────────────────────────────────────── */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          height: "2px",
-          width: `${scrollProgress * 100}%`,
-          background: "#c9a84c",
-          boxShadow: "0 0 8px 2px rgba(201,168,76,0.6)",
-          zIndex: 9999,
-          transition: "width 0.1s linear",
-          pointerEvents: "none",
-        }}
-      />
+      {/* ── Fixed gold progress bar (ref-based, no re-renders) ──────── */}
+      <ScrollProgressBar />
 
       <div className="space-y-6">
         {/* ── Scenario text ────────────────────────────────────────────── */}

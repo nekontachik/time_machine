@@ -226,4 +226,34 @@ describe("ScenarioStream", () => {
     // Component rendered without crashing — field access was correct
     expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
   });
+
+  // ── ScrollProgressBar tests ─────────────────────────────────────────────
+
+  it("renders ScrollProgressBar (fixed gold bar) when scenario text is present", async () => {
+    cleanup = mockFetch({
+      scenarioChunks: ["Some scenario text."],
+      imageUrl: null,
+    });
+
+    const { container } = render(<ScenarioStream request={makeRequest()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Some scenario text/i)).toBeInTheDocument();
+    });
+
+    // ScrollProgressBar renders a div with aria-hidden="true" and gold background
+    const progressBar = container.querySelector('[aria-hidden="true"]');
+    expect(progressBar).toBeInTheDocument();
+    expect(progressBar).toHaveStyle({ position: "fixed", background: "#c9a84c" });
+    // Initial width should be 0%
+    expect(progressBar).toHaveStyle({ width: "0%" });
+  });
+
+  it("does NOT render ScrollProgressBar in placeholder state (no request)", () => {
+    const { container } = render(<ScenarioStream />);
+
+    // In placeholder state, the component returns a simple <p>, no progress bar
+    const progressBar = container.querySelector('[aria-hidden="true"]');
+    expect(progressBar).not.toBeInTheDocument();
+  });
 });

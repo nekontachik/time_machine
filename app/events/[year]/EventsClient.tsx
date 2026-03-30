@@ -105,21 +105,27 @@ export default function EventsClient({ events, year, lang }: Props) {
         </div>
       )}
 
-      {/* ── Generate button (only once all cards are visible) ───────────── */}
-      {step === "choice" && anyToggled && (
-        <div className="mt-8 flex justify-center animate-fade-in">
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-lg transition-colors hover:bg-indigo-500 active:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {generating ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <span>🚀</span>
-            )}
-            {generating ? "Generating..." : "Generate Scenario"}
-          </button>
+      {/* ── Hint + Generate button (only once all cards are visible) ──── */}
+      {step === "choice" && (
+        <div className="mt-8 flex flex-col items-center gap-3 animate-fade-in">
+          {!anyToggled ? (
+            <p className="text-sm text-gray-400 text-center px-4">
+              👆 Tap <span className="font-medium text-red-400">&quot;Erase it&quot;</span> on at least one event to create an alternative history scenario
+            </p>
+          ) : (
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-lg transition-colors hover:bg-indigo-500 active:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {generating ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <span>🚀</span>
+              )}
+              {generating ? "Generating..." : "Generate Scenario"}
+            </button>
+          )}
         </div>
       )}
     </>

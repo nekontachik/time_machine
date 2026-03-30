@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import EventsClient from "./EventsClient";
 import { generateEvents } from "@/lib/ai/text";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
@@ -40,8 +41,16 @@ export default async function EventsPage({ params, searchParams }: Props) {
         });
   }
 
+  const backLabel = lang === "en" ? "Choose another year" : "Обрати інший рік";
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
+      <Link
+        href="/"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+      >
+        ← {backLabel}
+      </Link>
       <h2 className="mb-8 text-3xl font-bold text-white">
         {formatYear(year)}
       </h2>

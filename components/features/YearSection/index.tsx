@@ -63,7 +63,10 @@ export default function YearSection() {
           min={MIN_YEAR}
           max={MAX_YEAR}
           value={year}
-          onChange={(e) => setYear(parseInt(e.target.value, 10))}
+          onChange={(e) => {
+            const val = parseInt(e.target.value, 10);
+            if (!isNaN(val)) setYear(val);
+          }}
           aria-label="Select historical year"
           className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700 accent-indigo-500"
         />
@@ -78,7 +81,12 @@ export default function YearSection() {
           min={MIN_YEAR}
           max={MAX_YEAR}
           value={year}
-          onChange={(e) => setYear(parseInt(e.target.value, 10))}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === "" || raw === "-") return; // allow clearing / typing negative
+            const val = parseInt(raw, 10);
+            if (!isNaN(val)) setYear(Math.max(MIN_YEAR, Math.min(MAX_YEAR, val)));
+          }}
           aria-label="Enter year directly"
           className="w-36 rounded-lg border border-gray-600 bg-gray-800/80 px-4 py-2 text-center text-white focus:border-indigo-500 focus:outline-none"
         />

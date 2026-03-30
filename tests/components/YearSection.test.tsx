@@ -124,6 +124,48 @@ describe("YearSection — number input interaction", () => {
     fireEvent.change(input, { target: { value: "1945" } });
     expect(screen.getByText("1945")).toBeInTheDocument();
   });
+
+  it("ignores empty string input (NaN guard)", () => {
+    render(<YearSection />);
+    const input = screen.getByRole("spinbutton");
+    // Default is 1969 — clearing should not produce NaN
+    fireEvent.change(input, { target: { value: "" } });
+    // Year should remain 1969 (unchanged)
+    expect(screen.getByText("1969")).toBeInTheDocument();
+    expect(screen.queryByText("NaN")).not.toBeInTheDocument();
+  });
+
+  it("ignores bare minus sign input (typing negative year)", () => {
+    render(<YearSection />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "-" } });
+    // Year should remain 1969 (unchanged)
+    expect(screen.getByText("1969")).toBeInTheDocument();
+  });
+
+  it("clamps input to MAX_YEAR when value exceeds upper bound", () => {
+    render(<YearSection />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "9999" } });
+    // Should be clamped to 2024 (MAX_YEAR)
+    expect(screen.getByText("2024")).toBeInTheDocument();
+  });
+
+  it("clamps input to MIN_YEAR when value exceeds lower bound", () => {
+    render(<YearSection />);
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: "-5000" } });
+    // Should be clamped to -3000 (MIN_YEAR) → displayed as "3000 BC"
+    expect(screen.getByText("3000 BC")).toBeInTheDocument();
+  });
+
+  it("NaN guard on range slider — non-numeric value does not produce NaN", () => {
+    render(<YearSection />);
+    const slider = screen.getByRole("slider");
+    fireEvent.change(slider, { target: { value: "abc" } });
+    // NaN should never appear in the rendered output
+    expect(screen.queryByText("NaN")).not.toBeInTheDocument();
+  });
 });
 
 describe("YearSection — form submission", () => {
