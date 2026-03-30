@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { HistoricalEvent } from "@/types";
 
 interface Props {
@@ -24,6 +25,9 @@ const badgeColors: Record<string, string> = {
 export default function EventCard({ event, onToggle, happened = true, rank }: Props) {
   const accent = borderAccent[event.impact] ?? borderAccent.medium;
   const badge = badgeColors[event.impact] ?? badgeColors.medium;
+  const [imgFailed, setImgFailed] = useState(false);
+
+  const showThumbnail = event.thumbnail && !imgFailed;
 
   return (
     <div
@@ -36,12 +40,13 @@ export default function EventCard({ event, onToggle, happened = true, rank }: Pr
         }`}
     >
       {/* Thumbnail — taller for visual impact */}
-      {event.thumbnail && (
+      {showThumbnail && (
         <div className="relative w-full h-48 overflow-hidden">
           <img
             src={event.thumbnail}
             alt={event.title}
             className="w-full h-full object-cover opacity-90"
+            onError={() => setImgFailed(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
           {/* Rank overlaid on image */}
@@ -54,8 +59,8 @@ export default function EventCard({ event, onToggle, happened = true, rank }: Pr
       )}
 
       <div className="p-6">
-        {/* Rank — only when no thumbnail */}
-        {rank && !event.thumbnail && (
+        {/* Rank — only when no thumbnail (or thumbnail failed) */}
+        {rank && !showThumbnail && (
           <span className="block text-5xl font-black text-gray-700/50 leading-none mb-3 select-none">
             {String(rank).padStart(2, "0")}
           </span>

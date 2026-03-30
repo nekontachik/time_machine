@@ -53,13 +53,15 @@ export default withSentryConfig(pwaConfig, {
   // Suppress Sentry build output for cleaner CI logs
   silent: true,
 
-  // Auto-instrument Next.js API routes, pages, and middleware
-  autoInstrumentServerFunctions: true,
-  autoInstrumentMiddleware: true,
-
   // Disable telemetry
   telemetry: false,
 
-  // Tree-shake Sentry debug code in production builds
-  disableLogger: true,
+  // Webpack-level Sentry settings (migrated from deprecated top-level options)
+  webpack: {
+    autoInstrumentServerFunctions: true,
+    autoInstrumentMiddleware: true,
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
 });
