@@ -9,9 +9,11 @@ export const metadata: Metadata = {
     "Pick a year, change history, see the alternative future. Powered by AI.",
   manifest: "/manifest.json",
   appleWebApp: {
-    capable: true,
     statusBarStyle: "black-translucent",
     title: "Time Machine",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
   openGraph: {
     title: "Time Machine — AI Alternative History",
