@@ -7,7 +7,7 @@
 
 > 🌍 **[Try it live → time-machine-mu.vercel.app](https://time-machine-mu.vercel.app/)**
 
-https://github.com/nekontachik/time_machine/raw/main/demo.mp4
+https://github.com/user-attachments/assets/e35a1360-2a20-4105-a0d3-989c63cf1e58
 
 An AI-powered Progressive Web App that lets users explore alternative history scenarios. Pick a historical year, toggle which events happened or didn't, and get a vivid AI-generated narrative with cinematic imagery and video.
 
