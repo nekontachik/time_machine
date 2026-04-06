@@ -7,6 +7,8 @@
 
 > 🌍 **[Try it live → time-machine-mu.vercel.app](https://time-machine-mu.vercel.app/)**
 
+https://github.com/nekontachik/time_machine/raw/main/demo.mp4
+
 An AI-powered Progressive Web App that lets users explore alternative history scenarios. Pick a historical year, toggle which events happened or didn't, and get a vivid AI-generated narrative with cinematic imagery and video.
 
 ## Features
@@ -137,6 +139,31 @@ This project uses AI providers (OpenRouter, fal.ai) for core functionality. The 
 - **Infrastructure gracefully degrades** — Redis, rate limiting, and premium checks are tested for fail-open behavior when dependencies are unavailable.
 - **API contracts are validated at two levels** — Vitest tests mock the AI layer and verify route-level logic (validation, error codes, rate limiting). Playwright E2E tests hit the running server to verify HTTP contracts independently.
 
+### AI Quality Evaluation
+
+```bash
+npm run eval          # run evaluation harness against live AI providers
+```
+
+Tests 10 historically significant years for event accuracy, structure compliance, latency, and runs a Claude vs Gemini comparison for scenario quality. See [`scripts/eval-harness.ts`](scripts/eval-harness.ts).
+
+**Latest results (April 2026):**
+
+| Metric | Result |
+|--------|--------|
+| Event accuracy (keyword match) | **93.0%** across 10 benchmark years |
+| Structure compliance (valid JSON) | **10/10** — zero failures |
+| Average event latency | **883ms** (Gemini 2.0 Flash) |
+
+Provider comparison for scenario generation (year 1969, "Apollo 11 fails"):
+
+| Provider | Paragraphs | Length | Readability | Latency |
+|----------|-----------|--------|-------------|---------|
+| Claude Sonnet | 4 (expected 3) | 2383 chars | 26.7 words/sentence | 2893ms |
+| Gemini Flash | 3 (correct) | 2048 chars | 16.9 words/sentence | 781ms |
+
+Claude produces richer, more literary narratives but occasionally exceeds structure constraints. Gemini follows instructions precisely and is 3.7× faster — confirming the architectural decision to use Gemini for structured data and Claude for creative writing.
+
 ## API Routes
 
 | Route | Method | Description |
@@ -225,6 +252,41 @@ lib/
 ├── premium.ts              # Premium status check (server-only)
 └── formatYear.ts           # Year formatting utility
 ```
+
+## Why These Technologies?
+
+| Decision | Rationale |
+|----------|-----------|
+| **OpenRouter over direct API SDKs** | Provider-agnostic gateway — switch models without code changes. One API key, unified billing, automatic failover. See [ADR-001](docs/adr/001-openrouter-over-direct-apis.md) |
+| **Gemini Flash for events, Claude Sonnet for narratives** | Events need speed + structured JSON (Gemini Flash: ~0.3s, $0.10/1M tokens). Narratives need literary quality (Claude Sonnet: noticeably better creative writing). Splitting models saves ~60% on text costs |
+| **fal.ai (Flux Schnell) over DALL-E** | 5× cheaper per image ($0.003 vs $0.016), comparable quality for cinematic scenes, sub-3s generation. See [ADR-004](docs/adr/004-flux-over-dalle.md) |
+| **Fail-open architecture** | Every external dependency can fail. Redis down → rate limiting bypassed. fal.ai error → placeholder image. Stream cut off → show whatever arrived. Users never see a blank screen. See [ADR-002](docs/adr/002-fail-open-architecture.md) |
+| **Redis with 24h TTL** | Same year = same events. Caching historical events cuts AI costs by ~80% for repeat requests. Fail-open when Redis is unavailable. See [ADR-003](docs/adr/003-redis-caching-strategy.md) |
+| **`server-only` import enforcement** | Hard boundary between server and client code. CI script (`check-server-only.sh`) blocks merges if any `lib/` file using Node.js APIs lacks the import |
+
+## Cost Per Request
+
+| Operation | Provider | Model | Cost |
+|-----------|----------|-------|------|
+| Event generation | OpenRouter | Gemini 2.0 Flash | ~$0.0002 (512 tokens) |
+| Event enrichment (×3) | OpenRouter | Gemini 2.0 Flash | ~$0.0004 (256 tokens × 3) |
+| Web search (×3) | Tavily | — | ~$0.003 |
+| Scenario narrative | OpenRouter | Claude Sonnet | ~$0.018 (2048 tokens) |
+| Image generation | fal.ai | Flux Schnell | ~$0.003 |
+| **Total (free tier)** | | | **~$0.025** |
+| Video generation | fal.ai | Kling 2.0 | ~$0.10 (premium only) |
+
+_At 100 daily users (3 requests each): estimated ~$7.50/day for text+image, with caching reducing repeat requests significantly._
+
+## Architecture Decision Records
+
+Detailed rationale for key technical decisions lives in [`docs/adr/`](docs/adr/):
+
+- [ADR-001: OpenRouter over direct APIs](docs/adr/001-openrouter-over-direct-apis.md)
+- [ADR-002: Fail-open architecture](docs/adr/002-fail-open-architecture.md)
+- [ADR-003: Redis caching strategy](docs/adr/003-redis-caching-strategy.md)
+- [ADR-004: Flux Schnell over DALL-E](docs/adr/004-flux-over-dalle.md)
+- [ADR-005: Testing strategy for AI outputs](docs/adr/005-testing-strategy-for-ai.md)
 
 ## License
 
