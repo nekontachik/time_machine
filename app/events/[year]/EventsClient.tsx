@@ -58,6 +58,7 @@ export default function EventsClient({ events, year, lang }: Props) {
     const eventsPayload = events.map((e) => ({
       id: e.id,
       happened: toggles[e.id] ?? true,
+      title: e.title,
     }));
     const firstUntoggled = events.find((e) => !(toggles[e.id] ?? true));
     const query = new URLSearchParams({

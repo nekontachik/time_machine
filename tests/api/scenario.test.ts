@@ -67,6 +67,94 @@ describe("POST /api/scenario", () => {
     expect(res.headers.get("X-RateLimit-Remaining")).toBe("99");
   });
 
+  // ── Year validation ────────────────────────────────────────────────────────
+
+  it("accepts year 0 (1 BCE / 1 CE boundary)", async () => {
+    const req = new Request("http://localhost:3000/api/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        year: 0,
+        events: [{ id: "1", happened: false }],
+        lang: "en",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
+    // year 0 is valid — must NOT be rejected (was a bug: !year treated 0 as falsy)
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects future year 2025", async () => {
+    const req = new Request("http://localhost:3000/api/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        year: 2025,
+        events: [{ id: "1", happened: false }],
+        lang: "en",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/out of range/i);
+  });
+
+  it("rejects far-future year 9999", async () => {
+    const req = new Request("http://localhost:3000/api/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        year: 9999,
+        events: [{ id: "1", happened: false }],
+        lang: "en",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects year below minimum: -9999", async () => {
+    const req = new Request("http://localhost:3000/api/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        year: -9999,
+        events: [{ id: "1", happened: false }],
+        lang: "en",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects float year 1969.5", async () => {
+    const req = new Request("http://localhost:3000/api/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        year: 1969.5,
+        events: [{ id: "1", happened: false }],
+        lang: "en",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects missing year (undefined in body)", async () => {
+    const req = new Request("http://localhost:3000/api/scenario", {
+      method: "POST",
+      body: JSON.stringify({
+        events: [{ id: "1", happened: false }],
+        lang: "en",
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await POST(req as unknown as import("next/server").NextRequest);
+    expect(res.status).toBe(400);
+  });
+
   it("rate limits when limit exceeded", async () => {
     // Override mock for this test
     const { checkRateLimit } = await import("@/lib/infrastructure/rate-limit");

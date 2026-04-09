@@ -15,6 +15,7 @@ export interface HistoricalEvent {
 export interface EventToggle {
   id: string;
   happened: boolean;
+  title?: string;
 }
 
 export interface PremiumOptions {

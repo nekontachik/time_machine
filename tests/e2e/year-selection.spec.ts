@@ -79,4 +79,66 @@ test.describe("Year selection", () => {
       page.getByText(/завантаження|loading/i)
     ).toBeVisible({ timeout: 1000 });
   });
+
+  test("typing a future year and submitting shows inline error, does not navigate", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const numberInput = page.locator('input[type="number"]');
+    const button = page.getByRole("button", { name: /Travel to/i });
+
+    // Force a future year into the input bypassing the JS clamp (direct value set)
+    await numberInput.evaluate((el: HTMLInputElement) => {
+      el.value = "2099";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Directly trigger submit without relying on the clamped React state
+    // The form submit handler must validate and block navigation
+    await page.evaluate(() => {
+      const form = document.querySelector("form");
+      form?.requestSubmit();
+    });
+
+    // Error message should appear
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText(/year|рік/i);
+
+    // URL must NOT have changed — still on homepage
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test("number input turns red border on invalid submit", async ({ page }) => {
+    await page.goto("/");
+    const numberInput = page.locator('input[type="number"]');
+
+    await numberInput.evaluate((el: HTMLInputElement) => {
+      el.value = "2099";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    await page.evaluate(() => {
+      document.querySelector("form")?.requestSubmit();
+    });
+
+    // After failed submit, input should have red border class
+    await expect(numberInput).toHaveClass(/border-red-500/);
+  });
+
+  test("error clears when user starts correcting the year", async ({ page }) => {
+    await page.goto("/");
+    const numberInput = page.locator('input[type="number"]');
+
+    // Trigger error first
+    await numberInput.evaluate((el: HTMLInputElement) => {
+      el.value = "2099";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await page.evaluate(() => document.querySelector("form")?.requestSubmit());
+    await expect(page.getByRole("alert")).toBeVisible();
+
+    // Now type a valid year
+    await numberInput.fill("1945");
+    await expect(page.getByRole("alert")).not.toBeVisible();
+  });
 });

@@ -22,6 +22,7 @@ function getEraLabel(year: number): string {
 export default function YearSection() {
   const [year, setYear] = useState(1969);
   const [loading, setLoading] = useState(false);
+  const [inputError, setInputError] = useState<string | null>(null);
   const router = useRouter();
 
   const displayYear = formatYear(year);
@@ -29,6 +30,11 @@ export default function YearSection() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isNaN(year) || year < MIN_YEAR || year > MAX_YEAR) {
+      setInputError(`Please enter a year between ${MIN_YEAR < 0 ? `${Math.abs(MIN_YEAR)} BCE` : MIN_YEAR} and ${MAX_YEAR}.`);
+      return;
+    }
+    setInputError(null);
     setLoading(true);
     router.push(`/events/${year}?lang=en`);
   }
@@ -85,11 +91,22 @@ export default function YearSection() {
             const raw = e.target.value;
             if (raw === "" || raw === "-") return; // allow clearing / typing negative
             const val = parseInt(raw, 10);
-            if (!isNaN(val)) setYear(Math.max(MIN_YEAR, Math.min(MAX_YEAR, val)));
+            if (!isNaN(val)) {
+              setYear(Math.max(MIN_YEAR, Math.min(MAX_YEAR, val)));
+              setInputError(null);
+            }
           }}
           aria-label="Enter year directly"
-          className="w-36 rounded-lg border border-gray-600 bg-gray-800/80 px-4 py-2 text-center text-white focus:border-indigo-500 focus:outline-none"
+          className={`w-36 rounded-lg border bg-gray-800/80 px-4 py-2 text-center text-white focus:outline-none ${
+            inputError ? "border-red-500 focus:border-red-400" : "border-gray-600 focus:border-indigo-500"
+          }`}
         />
+
+        {inputError && (
+          <p role="alert" className="text-sm text-red-400 text-center px-4">
+            {inputError}
+          </p>
+        )}
 
         <button
           type="submit"

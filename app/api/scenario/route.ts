@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamScenario } from "@/lib/ai/text";
 import { checkRateLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
+import { MIN_YEAR, MAX_YEAR } from "@/constants";
 import type { ScenarioRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
@@ -26,16 +27,23 @@ export async function POST(req: NextRequest) {
 
   const { year, events, customText, lang, premium } = body;
 
-  if (!year || !events || !lang) {
+  if (year === undefined || year === null || !events || !lang) {
     return NextResponse.json(
       { error: "year, events, and lang are required" },
       { status: 400 }
     );
   }
 
+  if (!Number.isInteger(year) || year < MIN_YEAR || year > MAX_YEAR) {
+    return NextResponse.json(
+      { error: `year out of range (${MIN_YEAR}–${MAX_YEAR})` },
+      { status: 400 }
+    );
+  }
+
   const changedEvents = events
     .filter((e) => !e.happened)
-    .map((e) => `event ${e.id} did NOT happen`);
+    .map((e) => (e.title ? `"${e.title}" did NOT happen` : `event ${e.id} did NOT happen`));
 
   if (customText) changedEvents.push(`Custom note: ${customText}`);
 
