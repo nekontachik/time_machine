@@ -2,6 +2,24 @@
   "name": "time-machine",
   "version": "0.2.0",
   "private": true,
+  "description": "AI-powered alternative history PWA — explore what-if scenarios for any year from 3000 BCE to 2024 CE",
+  "author": "nekontachik",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nekontachik/time_machine.git"
+  },
+  "keywords": [
+    "nextjs",
+    "typescript",
+    "ai",
+    "openrouter",
+    "fal-ai",
+    "alternative-history",
+    "threejs",
+    "pwa",
+    "redis",
+    "streaming"
+  ],
   "scripts": {
     "dev": "next dev",
     "dev:clean": "rm -rf .next && next dev",
@@ -18,6 +36,7 @@
     "test:e2e:ui": "playwright test --config config/playwright.config.ts --ui",
     "test:e2e:smoke": "playwright test --config config/playwright.config.ts tests/e2e/smoke.spec.ts",
     "check:server-only": "bash scripts/check-server-only.sh",
+    "eval": "npx tsx scripts/eval-harness.ts",
     "test:component": "vitest run --config config/vitest.component.config.ts",
     "prepare": "husky"
   },
@@ -46,6 +65,7 @@
     "@types/react-dom": "^18",
     "@vitejs/plugin-react": "^4.3.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "dotenv": "^17.3.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "husky": "^9.1.7",
@@ -53,6 +73,7 @@
     "jsdom": "^25.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^2.1.0"
   }
