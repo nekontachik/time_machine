@@ -147,8 +147,8 @@ describe("EventsClient — hint and generate button", () => {
     const params = new URLSearchParams(url.split("?")[1]);
     const events = JSON.parse(params.get("events")!);
     expect(events).toEqual([
-      { id: "1", happened: false },
-      { id: "2", happened: true },
+      { id: "1", happened: false, title: "Moon Landing" },
+      { id: "2", happened: true, title: "Woodstock" },
     ]);
     // eventTitle should be set to the first erased event
     expect(params.get("eventTitle")).toBe("Moon Landing");
