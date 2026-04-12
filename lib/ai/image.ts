@@ -109,7 +109,7 @@ async function callFlux(prompt: string): Promise<string> {
     throw normalizeFalError(err);
   }
 
-  console.log(
+  console.warn(
     "[flux] response images:",
     (result as { data: { images: { url: string }[] } }).data?.images?.length
   );

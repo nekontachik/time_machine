@@ -121,7 +121,7 @@ async function realPollTask(taskId: string): Promise<VideoGenerationResult> {
   // fal.ai can also return "FAILED" at runtime even though it's not in the TS types
   const falStatus = statusResponse.status as string;
 
-  console.log(`[kling-fal] poll taskId=${taskId} falStatus=${falStatus}`);
+  console.warn(`[kling-fal] poll taskId=${taskId} falStatus=${falStatus}`);
 
   if (falStatus === "COMPLETED") {
     // Fetch the actual result
@@ -132,7 +132,7 @@ async function realPollTask(taskId: string): Promise<VideoGenerationResult> {
     const data = result.data as { video?: { url?: string } };
     const videoUrl = data?.video?.url;
 
-    console.log(`[kling-fal] completed taskId=${taskId} videoUrl=${videoUrl}`);
+    console.warn(`[kling-fal] completed taskId=${taskId} videoUrl=${videoUrl}`);
 
     return {
       taskId,

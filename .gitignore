@@ -42,6 +42,12 @@ yarn-error.log*
 CURSOR_PROMPT_UI_TESTS.md
 *.docx
 *.audit.md
+medium-post.md
+
+# Large media — use Git LFS or external hosting
+*.mp4
+*.mov
+*.avi
 
 # vercel
 .vercel

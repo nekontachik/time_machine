@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  console.log("[video/create] motion prompt:", motionPrompt);
+  console.warn("[video/create] motion prompt:", motionPrompt);
 
   const input: VideoGenerationInput = { imageUrl, prompt: motionPrompt, duration };
 
