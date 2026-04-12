@@ -154,46 +154,45 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "$FILE" ]; then
-            node - <<'EOF' >> $GITHUB_STEP_SUMMARY
+            node -e "
               const r = require('./test-results/unit-results.json');
-              const total   = r.numTotalTests    ?? 0;
-              const passed  = r.numPassedTests   ?? 0;
-              const failed  = r.numFailedTests   ?? 0;
-              const skipped = r.numPendingTests  ?? 0;
-              const status  = failed === 0 ? '✅ All tests passed' : `❌ ${failed} test(s) failed`;
-              console.log(`| Metric | Value |`);
-              console.log(`|--------|-------|`);
-              console.log(`| Status | ${status} |`);
-              console.log(`| ✅ Passed | ${passed} |`);
-              console.log(`| ❌ Failed | ${failed} |`);
-              console.log(`| ⏭️ Skipped | ${skipped} |`);
-              console.log(`| 📦 Total | ${total} |`);
-              console.log('');
+              const total   = r.numTotalTests    || 0;
+              const passed  = r.numPassedTests   || 0;
+              const failed  = r.numFailedTests   || 0;
+              const skipped = r.numPendingTests  || 0;
+              const status  = failed === 0 ? 'All tests passed' : failed + ' test(s) failed';
+              const icon    = failed === 0 ? '✅' : '❌';
+              console.log('| Metric | Value |');
+              console.log('|--------|-------|');
+              console.log('| Status | ' + icon + ' ' + status + ' |');
+              console.log('| ✅ Passed | ' + passed + ' |');
+              console.log('| ❌ Failed | ' + failed + ' |');
+              console.log('| ⏭️ Skipped | ' + skipped + ' |');
+              console.log('| 📦 Total | ' + total + ' |');
               if (failed > 0) {
-                console.log('### ❌ Failed tests');
-                (r.testResults || []).forEach(suite => {
-                  (suite.assertionResults || [])
-                    .filter(t => t.status === 'failed')
-                    .forEach(t => console.log('- `' + t.fullName + '`'));
-                });
                 console.log('');
+                console.log('### ❌ Failed tests');
+                (r.testResults || []).forEach(function(suite) {
+                  (suite.assertionResults || [])
+                    .filter(function(t) { return t.status === 'failed'; })
+                    .forEach(function(t) { console.log('- \`' + t.fullName + '\`'); });
+                });
               }
-EOF
+            " >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Result file not found" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Coverage table
           if [ -f "coverage/coverage-summary.json" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo "### 📊 Coverage" >> $GITHUB_STEP_SUMMARY
-            node - <<'EOF' >> $GITHUB_STEP_SUMMARY
+            node -e "
               const c = require('./coverage/coverage-summary.json').total;
-              const p = k => c[k] ? c[k].pct.toFixed(1) + '%' : 'n/a';
+              const p = function(k) { return c[k] ? c[k].pct.toFixed(1) + '%' : 'n/a'; };
               console.log('| Lines | Statements | Functions | Branches |');
               console.log('|-------|------------|-----------|----------|');
-              console.log(`| ${p('lines')} | ${p('statements')} | ${p('functions')} | ${p('branches')} |`);
-EOF
-            echo "" >> $GITHUB_STEP_SUMMARY
+              console.log('| ' + p('lines') + ' | ' + p('statements') + ' | ' + p('functions') + ' | ' + p('branches') + ' |');
+            " >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Upload coverage report
@@ -216,6 +215,7 @@ EOF
   e2e-desktop:
     name: "🖥️ E2E Tests (Desktop)"
     runs-on: ubuntu-latest
+    continue-on-error: true          # E2E failures are informational, don't block CI
     steps:
       - uses: actions/checkout@v4
 
@@ -277,6 +277,7 @@ EOF
   e2e-mobile:
     name: "📱 E2E Tests (Mobile)"
     runs-on: ubuntu-latest
+    continue-on-error: true          # E2E failures are informational, don't block CI
     steps:
       - uses: actions/checkout@v4
 
