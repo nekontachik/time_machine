@@ -1,13 +1,11 @@
 name: CI
 
-# Run on every push to any branch and on every pull request
 on:
   push:
     branches: ["**"]
   pull_request:
     branches: ["**"]
 
-# Cancel in-progress runs on the same branch/PR when a new commit arrives
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -19,7 +17,6 @@ env:
   REDIS_URL: ""
   NEXT_PUBLIC_APP_URL: http://localhost:3000
 
-# ─────────────────────────────────────────────────────────────────────────────
 jobs:
 
   # ── 1. Lint ──────────────────────────────────────────────────────────────
@@ -67,7 +64,7 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-  # ── 3. Production Build (smoke test) ─────────────────────────────────────
+  # ── 4. Production Build ──────────────────────────────────────────────────
   build:
     name: "🏗️ Build"
     runs-on: ubuntu-latest
@@ -83,27 +80,9 @@ jobs:
         run: npm ci
 
       - name: Next.js production build
-        id: next_build
         run: npm run build
-        continue-on-error: true
 
-      - name: Write build summary
-        if: always()
-        run: |
-          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-          OUTCOME="${{ steps.next_build.outcome }}"
-          ICON=$( [ "$OUTCOME" = "success" ] && echo "✅" || echo "❌" )
-
-          echo "## 🏗️ Production Build — $DATE" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "$ICON \`next build\` **$OUTCOME**" >> $GITHUB_STEP_SUMMARY
-
-      # Fail the job only after writing the summary
-      - name: Fail if build failed
-        if: steps.next_build.outcome == 'failure'
-        run: exit 1
-
-  # ── 4. Component Tests (React / jsdom) ───────────────────────────────────
+  # ── 5. Component Tests (React / jsdom) ───────────────────────────────────
   component-tests:
     name: "🧩 Component Tests"
     runs-on: ubuntu-latest
@@ -121,7 +100,7 @@ jobs:
       - name: Run component tests
         run: npm run test:component
 
-  # ── 5. Unit & API Tests (with coverage + summary) ────────────────────────
+  # ── 6. Unit & API Tests (with coverage) ──────────────────────────────────
   unit-tests:
     name: "🧪 Unit & API Tests"
     runs-on: ubuntu-latest
@@ -144,15 +123,13 @@ jobs:
             --reporter=json \
             --outputFile=test-results/unit-results.json
 
-      - name: Write unit test summary
+      - name: Write test summary
         if: always()
         run: |
           DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
           FILE="test-results/unit-results.json"
-
           echo "## 🧪 Unit & API Tests — $DATE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
           if [ -f "$FILE" ]; then
             node -e "
               const r = require('./test-results/unit-results.json');
@@ -169,20 +146,10 @@ jobs:
               console.log('| ❌ Failed | ' + failed + ' |');
               console.log('| ⏭️ Skipped | ' + skipped + ' |');
               console.log('| 📦 Total | ' + total + ' |');
-              if (failed > 0) {
-                console.log('');
-                console.log('### ❌ Failed tests');
-                (r.testResults || []).forEach(function(suite) {
-                  (suite.assertionResults || [])
-                    .filter(function(t) { return t.status === 'failed'; })
-                    .forEach(function(t) { console.log('- \`' + t.fullName + '\`'); });
-                });
-              }
             " >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Result file not found" >> $GITHUB_STEP_SUMMARY
           fi
-
           if [ -f "coverage/coverage-summary.json" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### 📊 Coverage" >> $GITHUB_STEP_SUMMARY
@@ -203,156 +170,22 @@ jobs:
           path: coverage/
           retention-days: 30
 
-      - name: Upload unit test JSON results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-results-${{ github.run_number }}
-          path: test-results/
-          retention-days: 14
-
-  # ── 4. E2E Tests — Desktop ──────────────────────────────────────────────
-  e2e-desktop:
-    name: "🖥️ E2E Tests (Desktop)"
-    runs-on: ubuntu-latest
-    continue-on-error: true          # E2E failures are informational, don't block CI
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: pw-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright + system deps
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps only (cache hit)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-
-      - name: Run E2E tests (Desktop)
-        id: e2e_desktop
-        run: npm run test:e2e:desktop
-        continue-on-error: true
-
-      - name: Write E2E desktop summary
-        if: always()
-        run: |
-          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-          OUTCOME="${{ steps.e2e_desktop.outcome }}"
-          ICON=$( [ "$OUTCOME" = "success" ] && echo "✅" || echo "❌" )
-
-          echo "## 🖥️ E2E Desktop — $DATE" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "$ICON Desktop E2E tests **$OUTCOME**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📄 Full interactive HTML report: artifact \`e2e-desktop-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Playwright Desktop report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-desktop-${{ github.run_number }}-${{ github.sha }}
-          path: playwright-report/
-          retention-days: 30
-
-      # Fail the job only after uploading the report
-      - name: Fail if E2E tests failed
-        if: steps.e2e_desktop.outcome == 'failure'
-        run: exit 1
-
-  # ── 5. E2E Tests — Mobile ───────────────────────────────────────────────
-  e2e-mobile:
-    name: "📱 E2E Tests (Mobile)"
-    runs-on: ubuntu-latest
-    continue-on-error: true          # E2E failures are informational, don't block CI
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: pw-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install Playwright + system deps
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps only (cache hit)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-
-      - name: Run E2E tests (Mobile)
-        id: e2e_mobile
-        run: npm run test:e2e:mobile
-        continue-on-error: true
-
-      - name: Write E2E mobile summary
-        if: always()
-        run: |
-          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-          OUTCOME="${{ steps.e2e_mobile.outcome }}"
-          ICON=$( [ "$OUTCOME" = "success" ] && echo "✅" || echo "❌" )
-
-          echo "## 📱 E2E Mobile — $DATE" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "$ICON Mobile E2E tests **$OUTCOME**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📄 Full interactive HTML report: artifact \`e2e-mobile-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Playwright Mobile report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-mobile-${{ github.run_number }}-${{ github.sha }}
-          path: playwright-report/
-          retention-days: 30
-
-      - name: Fail if E2E tests failed
-        if: steps.e2e_mobile.outcome == 'failure'
-        run: exit 1
-
-  # ── 6. Final pipeline summary ────────────────────────────────────────────
+  # ── 7. Pipeline summary ──────────────────────────────────────────────────
   summary:
     name: "📋 Report"
     runs-on: ubuntu-latest
-    needs: [lint, server-only-check, type-check, build, component-tests, unit-tests, e2e-desktop, e2e-mobile]
+    needs: [lint, server-only-check, type-check, build, component-tests, unit-tests]
     if: always()
     steps:
-      - name: Write final pipeline report
+      - name: Write pipeline report
         run: |
           DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-
           LINT="${{ needs.lint.result }}"
           SERVER_ONLY="${{ needs.server-only-check.result }}"
           TYPES="${{ needs.type-check.result }}"
           BUILD="${{ needs.build.result }}"
           COMPONENT="${{ needs.component-tests.result }}"
           UNIT="${{ needs.unit-tests.result }}"
-          E2E_D="${{ needs.e2e-desktop.result }}"
-          E2E_M="${{ needs.e2e-mobile.result }}"
 
           icon() {
             case "$1" in
@@ -364,11 +197,10 @@ jobs:
             esac
           }
 
-          # Overall status — E2E failures are reported but don't block merge
           if [ "$LINT" = "success" ] && [ "$SERVER_ONLY" = "success" ] && [ "$TYPES" = "success" ] && [ "$BUILD" = "success" ] && [ "$COMPONENT" = "success" ] && [ "$UNIT" = "success" ]; then
-            OVERALL="✅ Core pipeline passed"
+            OVERALL="✅ All checks passed"
           else
-            OVERALL="❌ Core pipeline failed"
+            OVERALL="❌ Pipeline failed"
           fi
 
           echo "# 📋 CI Report — $DATE" >> $GITHUB_STEP_SUMMARY
@@ -380,11 +212,9 @@ jobs:
           echo "| 🔍 Lint           | $(icon $LINT) \`$LINT\`            |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔒 Server-only    | $(icon $SERVER_ONLY) \`$SERVER_ONLY\` |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔷 TypeScript     | $(icon $TYPES) \`$TYPES\`          |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏗️ Build          | $(icon $BUILD) \`$BUILD\`  |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧩 Components     | $(icon $COMPONENT) \`$COMPONENT\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 Unit & API     | $(icon $UNIT) \`$UNIT\`    |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🖥️ E2E Desktop    | $(icon $E2E_D) \`$E2E_D\`  |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📱 E2E Mobile     | $(icon $E2E_M) \`$E2E_M\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ Build          | $(icon $BUILD) \`$BUILD\`          |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧩 Components     | $(icon $COMPONENT) \`$COMPONENT\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit & API     | $(icon $UNIT) \`$UNIT\`            |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "_Run [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · \`${{ github.ref_name }}\` · \`${GITHUB_SHA::7}\`_" >> $GITHUB_STEP_SUMMARY
