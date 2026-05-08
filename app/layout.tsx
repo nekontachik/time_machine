@@ -3,6 +3,9 @@ import "./globals.css";
 import InstallPrompt from "@/components/layout/InstallPrompt";
 import ServiceWorkerRegister from "@/components/layout/ServiceWorkerRegister";
 
+// IMPORTANT: NEXT_PUBLIC_APP_URL must be set in Vercel env vars to
+// "https://time-machine-mu.vercel.app" — the built-in VERCEL_URL gives
+// a per-deployment preview URL that changes every deploy and breaks OG tags.
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://time-machine-mu.vercel.app";
 
 export const metadata: Metadata = {
@@ -20,7 +23,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Time Machine — AI Alternative History",
-    description: "Pick a year, change history, see the alternative future.",
+    description:
+      "AI-powered PWA exploring alternative history. Pick a year, change history, and see the alternative future unfold with streaming narratives and cinematic AI-generated images.",
     url: appUrl,
     siteName: "Time Machine",
     type: "website",
@@ -37,7 +41,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Time Machine — AI Alternative History",
-    description: "Pick a year, change history, see the alternative future.",
+    description:
+      "AI-powered PWA exploring alternative history. Pick a year, change history, and see the alternative future unfold with streaming narratives and cinematic AI-generated images.",
     images: [
       {
         url: "/og-default.jpg",
@@ -55,22 +60,3 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-      </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        {children}
-        <InstallPrompt />
-        <ServiceWorkerRegister />
-      </body>
-    </html>
-  );
-}
