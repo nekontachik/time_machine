@@ -13,6 +13,7 @@ VIOLATIONS=()
 # These must NOT have server-only (would break client bundles).
 EXCLUDED_PATTERNS=(
   "lib/formatYear.ts"
+  "lib/mocks/events.ts"
 )
 
 is_excluded() {

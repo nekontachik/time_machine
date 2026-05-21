@@ -4,7 +4,7 @@ import Link from "next/link";
 import EventsClient from "./EventsClient";
 import { generateEvents } from "@/lib/ai/text";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
-import { MOCK_EVENTS } from "@/tests/fixtures/events";
+import { MOCK_EVENTS } from "@/lib/mocks/events";
 import type { HistoricalEvent } from "@/types";
 import { formatYear } from "@/lib/formatYear";
 
