@@ -1,4 +1,5 @@
 import "server-only";
+import * as Sentry from "@sentry/nextjs";
 import { fal } from "@fal-ai/client";
 import { IMAGE_MODEL, IMAGE_TIMEOUT_MS, IMAGE_MAX_ATTEMPTS } from "@/constants";
 
@@ -161,5 +162,17 @@ export async function generateScenarioImage(
     "[flux] all attempts failed, returning placeholder. Last error:",
     lastError?.message
   );
+
+  // Report the underlying failure so we don't silently degrade. The user
+  // still gets a placeholder image, but ops gets visibility into the
+  // real fal.ai error rate.
+  if (lastError) {
+    Sentry.captureException(lastError, {
+      level: "warning",
+      tags: { component: "flux-image" },
+      extra: { year, attempts: IMAGE_MAX_ATTEMPTS },
+    });
+  }
+
   return getPlaceholderUrl(year);
 }
