@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateScenarioImage } from "@/lib/ai/image";
 import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
-import type { ImageRequest, ImageResponse } from "@/types";
+import { parseJsonBody, ImageRequestSchema } from "@/lib/validators";
+import type { ImageResponse } from "@/types";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -13,21 +14,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: ImageRequest;
-  try {
-    body = (await req.json()) as ImageRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  const result = await parseJsonBody(req, ImageRequestSchema);
+  if (!result.ok) {
+    return NextResponse.json(result.body, { status: result.status });
   }
-
-  const { scenarioSummary, year, style } = body;
-
-  if (!scenarioSummary || !year) {
-    return NextResponse.json(
-      { error: "scenarioSummary and year are required" },
-      { status: 400 }
-    );
-  }
+  const { scenarioSummary, year, style } = result.data;
 
   try {
     const result = await generateScenarioImage(scenarioSummary, year, style);
