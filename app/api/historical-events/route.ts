@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateEvents } from "@/lib/ai/text";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
 import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
-import { LangSchema, YearSchema } from "@/lib/validators";
+import { LangSchema, YearParamSchema } from "@/lib/validators";
 import type { EventsResponse, HistoricalEvent } from "@/types";
 
 export async function GET(req: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
 
-  const yearParsed = YearSchema.safeParse(searchParams.get("year"));
+  const yearParsed = YearParamSchema.safeParse(searchParams.get("year"));
   if (!yearParsed.success) {
     return NextResponse.json(
       { error: "Invalid year", details: yearParsed.error.flatten() },

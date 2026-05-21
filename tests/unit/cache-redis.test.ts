@@ -85,14 +85,14 @@ describe("getCachedEvents / setCachedEvents — with in-memory Redis", () => {
   it("setCachedEvents sets a TTL on the key", async () => {
     await setCachedEvents(2000, "en", []);
 
-    const ttl = await mockRedis.ttl("events:2000:en");
+    const ttl = await mockRedis.ttl("events:v2:2000:en");
     expect(ttl).toBeGreaterThan(0);
     expect(ttl).toBeLessThanOrEqual(86400); // 24 hours
   });
 
   it("getCachedEvents returns null on JSON.parse error (corrupted data)", async () => {
     // Manually store invalid JSON to simulate corruption
-    await mockRedis.set("events:1900:en", "not-valid-json");
+    await mockRedis.set("events:v2:1900:en", "not-valid-json");
 
     const result = await getCachedEvents(1900, "en");
     expect(result).toBeNull();

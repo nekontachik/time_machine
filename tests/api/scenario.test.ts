@@ -7,7 +7,9 @@ vi.stubEnv("RATE_LIMIT_FREE", "100");
 // Mock rate limit to always allow
 vi.mock("@/lib/infrastructure/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 99 }),
+  checkBucketLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 99, limit: 10 }),
   getClientIp: vi.fn().mockReturnValue("127.0.0.1"),
+  getClientIpFromHeaders: vi.fn().mockReturnValue("127.0.0.1"),
 }));
 
 // Mock streaming scenario
@@ -97,7 +99,7 @@ describe("POST /api/scenario", () => {
     const res = await POST(req as unknown as import("next/server").NextRequest);
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/out of range/i);
+    expect(body.error).toMatch(/invalid/i);
   });
 
   it("rejects far-future year 9999", async () => {
@@ -157,10 +159,11 @@ describe("POST /api/scenario", () => {
 
   it("rate limits when limit exceeded", async () => {
     // Override mock for this test
-    const { checkRateLimit } = await import("@/lib/infrastructure/rate-limit");
-    vi.mocked(checkRateLimit).mockResolvedValueOnce({
+    const { checkBucketLimit } = await import("@/lib/infrastructure/rate-limit");
+    vi.mocked(checkBucketLimit).mockResolvedValueOnce({
       allowed: false,
       remaining: 0,
+      limit: 10,
     });
 
     const req = new Request("http://localhost:3000/api/scenario", {

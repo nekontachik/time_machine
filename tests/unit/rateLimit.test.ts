@@ -46,13 +46,15 @@ describe("getClientIp", () => {
     expect(getClientIp(req)).toBe("1.2.3.4");
   });
 
-  it("returns 'unknown' when no forwarded header", () => {
+  it("returns minute-bucketed 'unknown_<n>' when no forwarded header (prevents bucket pooling)", () => {
     const req = {
       headers: {
         get: () => null,
       },
     } as unknown as import("next/server").NextRequest;
 
-    expect(getClientIp(req)).toBe("unknown");
+    // The exact minute bucket doesn't matter — we just want non-empty,
+    // distinct from the previous literal "unknown".
+    expect(getClientIp(req)).toMatch(/^unknown_\d+$/);
   });
 });

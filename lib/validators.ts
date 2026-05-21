@@ -20,11 +20,21 @@ import { MIN_YEAR, MAX_YEAR } from "@/constants";
 
 export const LangSchema = z.enum(["ua", "en", "es", "pt", "pl"]);
 
-export const YearSchema = z.coerce
+/** Year as a JSON-body number (not coerced). Used by POST handlers. */
+export const YearSchema = z
   .number()
   .int()
   .min(MIN_YEAR)
   .max(MAX_YEAR);
+
+/** Year as a query-string parameter. Rejects null/empty, then parses
+ *  as a base-10 integer. Use this in GET handlers. */
+export const YearParamSchema = z
+  .string()
+  .min(1, "year is required")
+  .regex(/^-?\d+$/, "year must be an integer")
+  .transform((v) => parseInt(v, 10))
+  .pipe(z.number().int().min(MIN_YEAR).max(MAX_YEAR));
 
 /** Single-line short text, used for free-form user notes. Newlines are
  *  collapsed to single spaces to avoid promp-template breakouts. */
