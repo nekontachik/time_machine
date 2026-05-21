@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import EventsClient from "./EventsClient";
 import { generateEvents } from "@/lib/ai/text";
 import { getCachedEvents, setCachedEvents } from "@/lib/infrastructure/cache";
+import {
+  checkBucketLimit,
+  getClientIpFromHeaders,
+} from "@/lib/infrastructure/rate-limit";
 import { MOCK_EVENTS } from "@/lib/mocks/events";
 import type { HistoricalEvent } from "@/types";
 import { formatYear } from "@/lib/formatYear";
@@ -33,12 +37,24 @@ export default async function EventsPage({ params, searchParams }: Props) {
     events = MOCK_EVENTS;
   } else {
     const cached = await getCachedEvents(year, lang);
-    events = cached
-      ? (cached as HistoricalEvent[])
-      : await generateEvents(year, lang).then(async (generated) => {
-          await setCachedEvents(year, lang, generated);
-          return generated;
-        });
+    if (cached) {
+      events = cached as HistoricalEvent[];
+    } else {
+      // Cache miss → about to make a paid API call. Apply rate-limit so
+      // attackers cannot bypass the API rate-limit by hitting the SSR
+      // page directly with random lang values.
+      const ip = getClientIpFromHeaders(headers());
+      const { allowed } = await checkBucketLimit(ip, "events");
+      if (!allowed) {
+        // Surface as 429-equivalent through notFound() so we don't leak
+        // rate-limit state in the URL. A nicer UX would show a "try again
+        // tomorrow" page — out of scope here.
+        notFound();
+      }
+      const generated = await generateEvents(year, lang);
+      await setCachedEvents(year, lang, generated);
+      events = generated;
+    }
   }
 
   const backLabel = lang === "en" ? "Choose another year" : "Обрати інший рік";

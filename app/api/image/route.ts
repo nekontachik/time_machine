@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateScenarioImage } from "@/lib/ai/image";
+import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
 import type { ImageRequest, ImageResponse } from "@/types";
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const { allowed, limit } = await checkBucketLimit(ip, "image");
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Daily limit reached", limit },
+      { status: 429 }
+    );
+  }
+
   let body: ImageRequest;
   try {
     body = (await req.json()) as ImageRequest;

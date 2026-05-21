@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamScenario } from "@/lib/ai/text";
-import { checkRateLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
+import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
 import { MIN_YEAR, MAX_YEAR } from "@/constants";
 import type { ScenarioRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const { allowed, remaining } = await checkRateLimit(ip);
+  const { allowed, remaining, limit } = await checkBucketLimit(ip, "scenario");
 
   if (!allowed) {
     return NextResponse.json(
-      { error: "Daily limit reached", limit: 3 },
+      { error: "Daily limit reached", limit },
       {
         status: 429,
         headers: { "X-RateLimit-Remaining": "0" },
