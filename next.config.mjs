@@ -31,8 +31,12 @@ const nextConfig = {
       { protocol: "https", hostname: "fal.media" },
       { protocol: "https", hostname: "*.fal.media" },
       { protocol: "https", hostname: "storage.googleapis.com" },
-      // Tavily — thumbnail images from web search results
-      { protocol: "https", hostname: "**" },
+      // Tavily — thumbnail images from web search results.
+      // Limited to known Tavily-CDN + Wikipedia hosts to prevent SSRF via
+      // /_next/image?url=<arbitrary-https>. If a new Tavily-CDN host appears
+      // in production logs, add it explicitly here — never use a wildcard.
+      { protocol: "https", hostname: "*.tavilyusercontent.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
     ],
   },
 };
