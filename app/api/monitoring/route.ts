@@ -14,9 +14,21 @@ import { NextRequest, NextResponse } from "next/server";
 const SENTRY_HOST = "o4511131975090176.ingest.de.sentry.io";
 const SENTRY_PROJECT_IDS = ["4511131978104912"];
 
+const MAX_ENVELOPE_BYTES = 64 * 1024; // 64 KB — comfortably above typical Sentry envelopes
+
 export async function POST(request: NextRequest) {
   try {
+    // Reject oversized payloads up-front — Sentry envelopes are typically a few KB.
+    // This prevents DoS via large bodies (request.text() reads everything into memory).
+    const contentLength = parseInt(request.headers.get("content-length") ?? "0", 10);
+    if (contentLength > MAX_ENVELOPE_BYTES) {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
+
     const envelope = await request.text();
+    if (envelope.length > MAX_ENVELOPE_BYTES) {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     const piece = envelope.split("\n")[0];
     const header = JSON.parse(piece);
 
