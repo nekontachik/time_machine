@@ -14,7 +14,7 @@ An AI-powered Progressive Web App that lets users explore alternative history sc
 ## Features
 
 - **Year Explorer** — slider spanning 3000 BCE to 2024 CE with Three.js starfield animation
-- **AI Event Generation** — top-5 events for any year via Gemini 2.0 Flash (OpenRouter)
+- **AI Event Generation** — top-3 events for any year via Gemini 2.0 Flash (OpenRouter)
 - **Streaming Scenarios** — real-time alternative history narratives via Claude Sonnet (OpenRouter)
 - **AI Image Generation** — cinematic scene images via Flux Schnell (fal.ai)
 - **AI Video Generation** — image-to-video via Kling 2.0 (fal.ai), with mock mode for development
@@ -168,7 +168,7 @@ Claude produces richer, more literary narratives but occasionally exceeds struct
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/historical-events` | GET | Top-5 events for a year (Redis cache-first) |
+| `/api/historical-events` | GET | Top-3 events for a year (Redis cache-first) |
 | `/api/scenario` | POST | Streaming alternative history narrative |
 | `/api/image` | POST | AI image generation (Flux via fal.ai) |
 | `/api/video/create` | POST | Start video generation task (premium) |
