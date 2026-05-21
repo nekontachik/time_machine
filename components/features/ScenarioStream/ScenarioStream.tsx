@@ -288,23 +288,27 @@ export default function ScenarioStream({ request }: Props) {
         if (!reader) throw new Error("No response body");
 
         const decoder = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (ignore) { reader.cancel(); break; }
-          const chunk = decoder.decode(value, { stream: true });
-          textRef.current += chunk;
-          setText((prev) => prev + chunk);
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (ignore) { reader.cancel(); break; }
+            const chunk = decoder.decode(value, { stream: true });
+            textRef.current += chunk;
+            setText((prev) => prev + chunk);
 
-          // Start image generation as soon as we have ~300 chars —
-          // no need to wait for the full scenario to finish streaming.
-          if (
-            !imageRequestedRef.current &&
-            textRef.current.length >= 300 &&
-            request?.year !== undefined
-          ) {
-            requestImage(textRef.current.slice(0, 400), request.year);
+            // Start image generation as soon as we have ~300 chars —
+            // no need to wait for the full scenario to finish streaming.
+            if (
+              !imageRequestedRef.current &&
+              textRef.current.length >= 300 &&
+              request?.year !== undefined
+            ) {
+              requestImage(textRef.current.slice(0, 400), request.year);
+            }
           }
+        } finally {
+          try { reader.releaseLock(); } catch { /* already released */ }
         }
       } catch (err) {
         if (!ignore && (err as Error).name !== "AbortError") {
