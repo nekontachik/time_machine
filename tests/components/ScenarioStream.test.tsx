@@ -38,11 +38,9 @@ function makeRequest(overrides?: Partial<ScenarioRequest>): ScenarioRequest {
 function mockFetch({
   scenarioChunks = ["Alternative history text."],
   imageUrl = "https://example.com/generated.jpg",
-  videoTaskId = "task_123",
 }: {
   scenarioChunks?: string[];
   imageUrl?: string | null;
-  videoTaskId?: string;
 } = {}) {
   const original = global.fetch;
 
@@ -69,25 +67,6 @@ function mockFetch({
         return new Response(JSON.stringify({ imageUrl }), { status: 200 });
       }
       return new Response(JSON.stringify({}), { status: 200 });
-    }
-
-    // ── /api/video/create ────────────────────────────────────────────────
-    if (url.includes("/api/video/create")) {
-      return new Response(
-        JSON.stringify({ taskId: videoTaskId, status: "pending" }),
-        { status: 200 }
-      );
-    }
-
-    // ── /api/video/status ────────────────────────────────────────────────
-    if (url.includes("/api/video/status")) {
-      return new Response(
-        JSON.stringify({
-          status: "completed",
-          videoUrl: "https://example.com/video.mp4",
-        }),
-        { status: 200 }
-      );
     }
 
     return new Response("Not found", { status: 404 });

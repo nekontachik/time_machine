@@ -18,12 +18,6 @@ export const SCENARIO_MODEL = "anthropic/claude-sonnet-4-5";
 /** fal.ai model for image generation */
 export const IMAGE_MODEL = "fal-ai/flux/schnell";
 
-/** fal.ai model for image-to-video generation
- *  v2.5-turbo/standard: ~15–30 s per clip (vs v2/master 60–120 s)
- *  Same input/output schema — just faster and cheaper.
- */
-export const VIDEO_MODEL = "fal-ai/kling-video/v2.5-turbo/standard/image-to-video";
-
 // ---------------------------------------------------------------------------
 // Cache / rate-limit
 // ---------------------------------------------------------------------------

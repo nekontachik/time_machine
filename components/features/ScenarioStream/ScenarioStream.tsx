@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ScenarioRequest } from "@/types";
 
 // ── Scroll progress bar — updates via ref (no React re-render) ──────────────
@@ -135,11 +135,6 @@ interface Props {
   request?: ScenarioRequest;
 }
 
-type VideoStatus = "idle" | "pending" | "processing" | "completed" | "failed";
-
-const VIDEO_POLL_INTERVAL_MS = 3000;
-const VIDEO_MAX_POLLS = 60; // 60 × 3 s = 180 s — covers Kling 2.5-turbo (15–30 s typical, 90 s max)
-
 export default function ScenarioStream({ request }: Props) {
 
   const [text, setText] = useState("");
@@ -150,95 +145,13 @@ export default function ScenarioStream({ request }: Props) {
   const textRef = useRef("");
   const imageRequestedRef = useRef(false);
 
-  // ── Video state ──────────────────────────────────────────────────────────
-  const [videoStatus, setVideoStatus] = useState<VideoStatus>("idle");
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollCountRef = useRef(0);
-
   const requestKey = request ? JSON.stringify(request) : null;
 
   // Reset everything when request changes
   useEffect(() => {
     setImageUrl(null);
     textRef.current = "";
-    setVideoStatus("idle");
-    setVideoUrl(null);
-    setVideoError(null);
-    pollCountRef.current = 0;
-    if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
   }, [requestKey]);
-
-  // ── Video polling ────────────────────────────────────────────────────────
-  const pollVideo = useCallback((taskId: string) => {
-    if (pollCountRef.current >= VIDEO_MAX_POLLS) {
-      setVideoStatus("failed");
-      setVideoError("Video generation timed out. Try again.");
-      return;
-    }
-    pollCountRef.current += 1;
-
-    pollTimerRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/video/status?taskId=${encodeURIComponent(taskId)}`);
-        const data = await res.json() as { status: string; videoUrl?: string; error?: string };
-
-        if (data.status === "completed" && data.videoUrl) {
-          setVideoStatus("completed");
-          setVideoUrl(data.videoUrl);
-        } else if (data.status === "failed") {
-          setVideoStatus("failed");
-          setVideoError(data.error ?? "Video generation failed.");
-        } else {
-          setVideoStatus(data.status === "pending" ? "pending" : "processing");
-          pollVideo(taskId);
-        }
-      } catch {
-        setVideoStatus("failed");
-        setVideoError("Failed to check video status.");
-      }
-    }, VIDEO_POLL_INTERVAL_MS);
-  }, []);
-
-  // ── Generate video ───────────────────────────────────────────────────────
-  async function handleGenerateVideo() {
-    if (!imageUrl || !request) return;
-
-    setVideoStatus("pending");
-    setVideoUrl(null);
-    setVideoError(null);
-    pollCountRef.current = 0;
-
-    // Extract first "didn't happen" event as context for the motion prompt
-    const firstEvent = request.events.find((e) => !e.happened);
-
-    try {
-      const res = await fetch("/api/video/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageUrl,
-          duration: 5,
-          // Pass scenario context — server calls buildMotionPrompt() for Kling
-          scenarioText: textRef.current.slice(0, 400),
-          eventName: firstEvent?.title ?? "",
-          year: request.year,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json() as { error?: string };
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
-
-      const data = await res.json() as { taskId: string; status: string };
-      pollVideo(data.taskId);
-    } catch (err) {
-      setVideoStatus("failed");
-      setVideoError((err as Error).message);
-    }
-  }
 
   // ── Scenario streaming ───────────────────────────────────────────────────
   useEffect(() => {
@@ -374,8 +287,6 @@ export default function ScenarioStream({ request }: Props) {
   // Split into paragraphs for per-paragraph reveal (only after streaming ends)
   const paragraphs = stripped.split(/\n\n+/).filter(Boolean);
 
-  const videoInProgress = videoStatus === "pending" || videoStatus === "processing";
-
   return (
     <>
       {/* ── Fixed gold progress bar (ref-based, no re-renders) ──────── */}
@@ -407,69 +318,16 @@ export default function ScenarioStream({ request }: Props) {
           )}
         </div>
 
-        {/* ── Generated image + video section ─────────────────────────── */}
+        {/* ── Generated image ─────────────────────────────────────────── */}
         {imageUrl && !imageUrl.startsWith("/placeholder") && (
           <div className="space-y-3">
-            {/* When video is ready — show ONLY the video */}
-            {videoStatus === "completed" && videoUrl ? (
-              <video
-                src={videoUrl}
-                controls
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full rounded-xl border border-gray-700 animate-fade-in"
+            <div className="relative rounded-xl overflow-hidden border border-gray-700">
+              <FocusImage
+                src={imageUrl}
+                alt={`Alternative history ${request?.year ?? ""}`}
+                className="w-full object-cover transition-opacity duration-300"
               />
-            ) : (
-              /* Image — blur-to-focus reveal; acts as placeholder while video generates */
-              <div className="relative rounded-xl overflow-hidden border border-gray-700">
-                <FocusImage
-                  src={imageUrl}
-                  alt={`Alternative history ${request?.year ?? ""}`}
-                  className={`w-full object-cover transition-opacity duration-300 ${
-                    videoInProgress ? "opacity-60" : "opacity-100"
-                  }`}
-                />
-
-                {/* Overlay spinner while video is rendering */}
-                {videoInProgress && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30">
-                    <span className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-violet-400" />
-                    <p className="text-sm font-medium text-white drop-shadow">
-                      {videoStatus === "pending"
-                        ? "Starting video generation…"
-                        : "Rendering video…"}
-                    </p>
-                    <p className="text-xs text-gray-300 drop-shadow">
-                      Kling 2.5 Turbo · typically 15–30 s
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Controls row */}
-            {/* {videoStatus === "idle" && (
-              <button
-                onClick={handleGenerateVideo}
-                className="flex items-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600 transition-colors"
-              >
-                <span>🎬</span> Generate Video
-              </button>
-            )} */}
-
-            {/* {videoStatus === "failed" && (
-              <div className="flex items-center gap-3">
-                <p className="text-sm text-red-400">{videoError ?? "Video generation failed."}</p>
-                <button
-                  onClick={handleGenerateVideo}
-                  className="rounded-lg bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-600"
-                >
-                  Retry
-                </button>
-              </div>
-            )} */}
+            </div>
           </div>
         )}
       </div>

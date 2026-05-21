@@ -55,34 +55,7 @@ test.describe("API: /api/image", () => {
   });
 });
 
-test.describe("API: /api/video/create", () => {
-  test("returns 400 without required fields", async ({ request }) => {
-    const res = await request.post("/api/video/create", {
-      data: { imageUrl: "https://example.com/img.jpg" },
-    });
-    // Either 400 (bad request) or 403 (not premium) depending on env
-    expect([400, 403]).toContain(res.status());
-  });
 
-  test("returns 400 for invalid duration", async ({ request }) => {
-    const res = await request.post("/api/video/create", {
-      data: {
-        imageUrl: "https://example.com/img.jpg",
-        prompt: "Test",
-        duration: 99,
-      },
-    });
-    expect([400, 403]).toContain(res.status());
-  });
-});
-
-test.describe("API: /api/video/status", () => {
-  test("returns 400 without taskId", async ({ request }) => {
-    const res = await request.get("/api/video/status");
-    // Either 400 or 403 depending on premium check
-    expect([400, 403]).toContain(res.status());
-  });
-});
 
 test.describe("API: /api/test-flux", () => {
   test("returns 404 in production mode", async ({ request }) => {

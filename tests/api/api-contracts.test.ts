@@ -33,15 +33,6 @@ vi.mock("@/lib/rateLimit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 99 }),
 }));
 
-vi.mock("@/lib/premium", () => ({
-  isPremium: vi.fn().mockResolvedValue(true),
-}));
-
-vi.mock("@/lib/video-providers/kling", () => ({
-  createKlingVideo: vi.fn().mockResolvedValue({ taskId: "mock-task-id" }),
-  getKlingVideoStatus: vi.fn().mockResolvedValue({ status: "pending" }),
-}));
-
 // ─── /api/historical-events ────────────────────────────────────────────────
 
 describe("GET /api/historical-events", () => {
@@ -135,59 +126,5 @@ describe("POST /api/image", () => {
     });
     const res = await POST(req as never);
     expect(res.status).toBe(400);
-  });
-});
-
-// ─── /api/video/create ─────────────────────────────────────────────────────
-
-describe("POST /api/video/create", () => {
-  let POST: typeof import("@/app/api/video/create/route").POST;
-
-  beforeEach(async () => {
-    vi.resetModules();
-    const mod = await import("@/app/api/video/create/route");
-    POST = mod.POST;
-  });
-
-  it("returns 400 without required fields", async () => {
-    const req = new Request("http://localhost:3000/api/video/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: "https://example.com/img.jpg" }),
-    });
-    const res = await POST(req as never);
-    expect([400, 403]).toContain(res.status);
-  });
-
-  it("returns 400 for invalid duration", async () => {
-    const req = new Request("http://localhost:3000/api/video/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageUrl: "https://example.com/img.jpg",
-        prompt: "Test",
-        duration: 99,
-      }),
-    });
-    const res = await POST(req as never);
-    expect([400, 403]).toContain(res.status);
-  });
-});
-
-// ─── /api/video/status ─────────────────────────────────────────────────────
-
-describe("GET /api/video/status", () => {
-  let GET: typeof import("@/app/api/video/status/route").GET;
-
-  beforeEach(async () => {
-    vi.resetModules();
-    const mod = await import("@/app/api/video/status/route");
-    GET = mod.GET;
-  });
-
-  it("returns 400 without taskId", async () => {
-    const req = new Request("http://localhost:3000/api/video/status");
-    const res = await GET(req as never);
-    expect([400, 403]).toContain(res.status);
   });
 });

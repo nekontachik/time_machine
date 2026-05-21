@@ -266,8 +266,8 @@ describe("Constants sanity checks", () => {
   });
 
   it("model identifiers are non-empty strings", async () => {
-    const { EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL, VIDEO_MODEL } = await import("@/constants");
-    for (const model of [EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL, VIDEO_MODEL]) {
+    const { EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL } = await import("@/constants");
+    for (const model of [EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL]) {
       expect(typeof model).toBe("string");
       expect(model.length).toBeGreaterThan(0);
     }

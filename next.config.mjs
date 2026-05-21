@@ -27,7 +27,7 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
-      // fal.ai — Flux image generation + Kling video thumbnails
+      // fal.ai — Flux image generation
       { protocol: "https", hostname: "fal.media" },
       { protocol: "https", hostname: "*.fal.media" },
       { protocol: "https", hostname: "storage.googleapis.com" },
