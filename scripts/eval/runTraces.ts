@@ -37,6 +37,7 @@ import {
   selectDisabled,
   assertSeparable,
   COMPLEXITY_NEEDS_CUSTOM_TEXT,
+  PRODUCT_LANG,
 } from "./dimensions";
 import { callOpenRouter } from "./openrouter";
 import { naturalizeCustomText } from "./naturalize";
@@ -104,7 +105,7 @@ async function main() {
   for (const t of tuples) {
     for (let run = 1; run <= RUNS; run++) {
       try {
-        const events = await getEvents(t.year, t.lang);
+        const events = await getEvents(t.year, PRODUCT_LANG);
         const sep = assertSeparable(events);
         if (!sep.ok) collapsed++;
 
@@ -117,7 +118,7 @@ async function main() {
           if (DRY) {
             customText = `[dry-run custom note for ${yearLabel(t.year)}]`;
           } else {
-            const nat = await naturalizeCustomText(t.year, events, removed, t.lang);
+            const nat = await naturalizeCustomText(t.year, events, removed, PRODUCT_LANG);
             customDraft = nat.draft;
             customText = nat.clean;
           }
@@ -129,10 +130,10 @@ async function main() {
         let latencyMs = 0;
         let totalTokens = 0;
         if (DRY) {
-          output = stubScenario(t.year, changes, t.lang);
+          output = stubScenario(t.year, changes, PRODUCT_LANG);
         } else {
           const r = await callOpenRouter(
-            scenarioPrompt({ year: t.year, changes, lang: t.lang })
+            scenarioPrompt({ year: t.year, changes, lang: PRODUCT_LANG })
           );
           output = r.text;
           latencyMs = r.latencyMs;
@@ -151,10 +152,10 @@ async function main() {
           run,
           ts: new Date().toISOString(),
           dryRun: DRY,
-          dims: { era: t.era, density: t.density, complexity: t.complexity, lang: t.lang },
+          dims: { era: t.era, density: t.density, complexity: t.complexity, lang: PRODUCT_LANG },
           hypothesis: t.hypothesis,
           year: t.year,
-          lang: t.lang,
+          lang: PRODUCT_LANG,
           events: events.map((e) => ({ id: e.id, title: e.title, impact: e.impact })),
           disabledIds,
           separable: sep,
@@ -171,7 +172,7 @@ async function main() {
         appendFileSync(OUT, JSON.stringify(trace) + "\n");
         n++;
         process.stdout.write(
-          `\r${n} traces  (last: ${t.id} r${run}, ${t.complexity}/${t.lang}, ` +
+          `\r${n} traces  (last: ${t.id} r${run}, ${t.complexity}/${PRODUCT_LANG}, ` +
             `paras=${paragraphCount}${sep.ok ? "" : ", COLLAPSED"})        `
         );
       } catch (err) {

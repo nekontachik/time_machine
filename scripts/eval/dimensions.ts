@@ -6,11 +6,10 @@
  * across these axes and target our failure hypotheses, then run each tuple
  * through the REAL product pipeline to capture traces for error analysis.
  *
- * Axes:
+ * Axes (3 — Language is NOT an axis: the product is English-only, see below):
  *   1. Era                 — when in history (stresses data density, anachronism, BCE formatting)
  *   2. Historical Density  — how documented / event-rich the year is (hallucination risk)
  *   3. Counterfactual Complexity — how big/entangled the intervention is
- *   4. Language            — output language (5 supported; non-EN stresses grounding + leakage)
  *
  * ---------------------------------------------------------------------------
  * FIX for the 5 -> 3 events transition (peripheral vs central collapse)
@@ -74,8 +73,11 @@ export const COMPLEXITY_NEEDS_CUSTOM_TEXT: Record<Complexity, boolean> = {
   custom: true,
 };
 
-// --- 4. Language -----------------------------------------------------------
-export const LANGS: Lang[] = ["en", "ua", "es", "pt", "pl"];
+// --- Language: NOT a dimension ---------------------------------------------
+// The product ships in ONE language (English), so language is held CONSTANT,
+// not varied. Ukrainian + es/pt/pl existed only as early scaffolding and were
+// dropped (see the separate English-only cleanup).
+export const PRODUCT_LANG: Lang = "en";
 
 // --- A tuple ---------------------------------------------------------------
 export interface Tuple {
@@ -84,7 +86,6 @@ export interface Tuple {
   era: Era; // must equal eraOf(year) — validated in tuples.ts
   density: Density;
   complexity: Complexity;
-  lang: Lang;
   /** Why this tuple exists — the failure hypothesis it targets. */
   hypothesis: string;
 }
@@ -151,7 +152,7 @@ export function assertSeparable(events: HistoricalEvent[]): {
   if (tiers.size < 2) {
     return {
       ok: false,
-      reason: `all ${events.length} events share impact tier "${[...tiers][0]}" — peripheral/central collapse`,
+      reason: `all ${events.length} events share impact tier "${Array.from(tiers)[0]}" — peripheral/central collapse`,
     };
   }
   return { ok: true };
