@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { year, events, customText, lang, premium } = body;
+  const { year, events, lang, premium } = body;
 
   if (year === undefined || year === null || !events || !lang) {
     return NextResponse.json(
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const changes = buildChangesString(events, customText);
+  const changes = buildChangesString(events);
 
   try {
     const stream = await streamScenario({ year, changes, lang, premium });
