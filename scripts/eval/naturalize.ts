@@ -20,7 +20,9 @@ import { yearLabel } from "@/lib/ai/prompts";
 import { callOpenRouter } from "./openrouter";
 import { EVENTS_MODEL } from "@/constants";
 
-const LANG_NAME: Record<Lang, string> = {
+// Loose map (not Record<Lang>) so the harness stays decoupled from the exact
+// Lang union — the product may narrow Lang to just "en" without breaking this.
+const LANG_NAME: Record<string, string> = {
   en: "English",
   ua: "Ukrainian",
   es: "Spanish",
@@ -51,7 +53,7 @@ export async function draftCustomText(
         content: `Year ${yearLabel(year)}. The app shows these events:
 ${eventList}
 The user has removed: ${removedTitles}.
-Write the short free-text "what if" note this user would type to steer the story — one or two sentences, first person, casual, specific. Language: ${LANG_NAME[lang]}. Output ONLY the note, no quotes.`,
+Write the short free-text "what if" note this user would type to steer the story — one or two sentences, first person, casual, specific. Language: ${(LANG_NAME[lang] ?? "English")}. Output ONLY the note, no quotes.`,
       },
     ],
   });
@@ -70,7 +72,7 @@ export async function cleanCustomText(draft: string, lang: Lang): Promise<string
       },
       {
         role: "user",
-        content: `Rewrite this user note so it sounds authentically human (keep the meaning and the language ${LANG_NAME[lang]}). Remove any robotic or templated phrasing. Output ONLY the rewritten note:\n\n${draft}`,
+        content: `Rewrite this user note so it sounds authentically human (keep the meaning and the language ${(LANG_NAME[lang] ?? "English")}). Remove any robotic or templated phrasing. Output ONLY the rewritten note:\n\n${draft}`,
       },
     ],
   });
