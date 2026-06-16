@@ -6,7 +6,7 @@ import type { EventsResponse, HistoricalEvent } from "@/types";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const yearParam = searchParams.get("year");
-  const lang = searchParams.get("lang") ?? "ua";
+  const lang = searchParams.get("lang") ?? "en";
 
   if (!yearParam) {
     return NextResponse.json({ error: "year is required" }, { status: 400 });
