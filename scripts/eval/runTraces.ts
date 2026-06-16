@@ -13,8 +13,7 @@
  * Pipeline per run (faithful to the product):
  *   real events  = generateEventTitles(year, lang)        [prompts.ts + parse]
  *   toggles      = selectDisabled(events, complexity)     [dimensions.ts]
- *   customText   = naturalizeCustomText(...) if "custom"  [naturalize.ts]
- *   changes      = buildChangesString(toggles, customText)[changes.ts = API route]
+ *   changes      = buildChangesString(toggles)             [changes.ts = API route]
  *   output       = scenario model on scenarioPrompt(...)  [prompts.ts]
  *
  * Note: production streams the scenario (stream:true); the harness calls the
@@ -36,11 +35,9 @@ import { TUPLES, coverageReport } from "./tuples";
 import {
   selectDisabled,
   assertSeparable,
-  COMPLEXITY_NEEDS_CUSTOM_TEXT,
   PRODUCT_LANG,
 } from "./dimensions";
 import { callOpenRouter } from "./openrouter";
-import { naturalizeCustomText } from "./naturalize";
 
 // --- flags -----------------------------------------------------------------
 const argv = process.argv.slice(2);
@@ -110,21 +107,7 @@ async function main() {
         if (!sep.ok) collapsed++;
 
         const { toggles, disabledIds } = selectDisabled(events, t.complexity);
-        const removed = events.filter((e) => disabledIds.includes(e.id));
-
-        let customText: string | undefined;
-        let customDraft: string | undefined;
-        if (COMPLEXITY_NEEDS_CUSTOM_TEXT[t.complexity]) {
-          if (DRY) {
-            customText = `[dry-run custom note for ${yearLabel(t.year)}]`;
-          } else {
-            const nat = await naturalizeCustomText(t.year, events, removed, PRODUCT_LANG);
-            customDraft = nat.draft;
-            customText = nat.clean;
-          }
-        }
-
-        const changes = buildChangesString(toggles, customText);
+        const changes = buildChangesString(toggles);
 
         let output: string;
         let latencyMs = 0;
@@ -159,8 +142,6 @@ async function main() {
           events: events.map((e) => ({ id: e.id, title: e.title, impact: e.impact })),
           disabledIds,
           separable: sep,
-          customTextDraft: customDraft ?? null,
-          customText: customText ?? null,
           changes,
           scenarioModel: SCENARIO_MODEL,
           latencyMs,
