@@ -9,7 +9,7 @@ interface State {
   error: string | null;
 }
 
-export function useYearEvents(year: number | null, lang: Lang = "ua"): State {
+export function useYearEvents(year: number | null, lang: Lang = "en"): State {
   const [state, setState] = useState<State>({
     events: [],
     loading: false,

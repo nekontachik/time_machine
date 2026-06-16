@@ -78,7 +78,7 @@ describe("GET /api/historical-events", () => {
     expect(body.events[0]).toHaveProperty("title");
   });
 
-  it("defaults lang to 'ua' when not provided", async () => {
+  it("defaults lang to 'en' when not provided", async () => {
     const req = new Request(
       "http://localhost:3000/api/historical-events?year=1969"
     );
