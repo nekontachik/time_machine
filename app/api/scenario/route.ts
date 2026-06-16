@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamScenario } from "@/lib/ai/text";
+import { buildChangesString } from "@/lib/ai/changes";
 import { checkRateLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
 import { MIN_YEAR, MAX_YEAR } from "@/constants";
 import type { ScenarioRequest } from "@/types";
@@ -41,16 +42,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const changedEvents = events
-    .filter((e) => !e.happened)
-    .map((e) => (e.title ? `"${e.title}" did NOT happen` : `event ${e.id} did NOT happen`));
-
-  if (customText) changedEvents.push(`Custom note: ${customText}`);
-
-  const changes =
-    changedEvents.length > 0
-      ? changedEvents.join("; ")
-      : "all events happened as recorded";
+  const changes = buildChangesString(events, customText);
 
   try {
     const stream = await streamScenario({ year, changes, lang, premium });
