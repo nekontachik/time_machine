@@ -145,30 +145,6 @@ describe("POST /api/scenario — streaming", () => {
     expect(capturedChanges).toContain("all events happened as recorded");
   });
 
-  it("passes customText into the changes string", async () => {
-    let capturedChanges = "";
-    mockStreamScenario.mockImplementation(
-      ({ changes }: { changes: string }) => {
-        capturedChanges = changes;
-        return Promise.resolve(makeStream(["ok"]));
-      }
-    );
-
-    const req = new Request("http://localhost/api/scenario", {
-      method: "POST",
-      body: JSON.stringify({
-        year: 1969,
-        events: [{ id: "1", happened: true }],
-        customText: "Tesla was still alive",
-        lang: "en",
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
-
-    await POST(req as unknown as import("next/server").NextRequest);
-    expect(capturedChanges).toContain("Tesla was still alive");
-  });
-
   it("passes premium options to streamScenario", async () => {
     let capturedArgs: Record<string, unknown> = {};
     mockStreamScenario.mockImplementation((args: Record<string, unknown>) => {

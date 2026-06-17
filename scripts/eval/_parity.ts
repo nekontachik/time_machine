@@ -46,7 +46,7 @@ const t = (id: string, happened: boolean, title?: string): EventToggle => ({ id,
 eq("changes.none", buildChangesString([t("1", true, "A"), t("2", true, "B")]), "all events happened as recorded");
 eq("changes.one-title", buildChangesString([t("1", false, "Moon landing"), t("2", true, "B")]), '"Moon landing" did NOT happen');
 eq("changes.no-title", buildChangesString([t("3", false)]), "event 3 did NOT happen");
-eq("changes.two+custom", buildChangesString([t("1", false, "A"), t("2", false, "B")], "what if Rome won"), '"A" did NOT happen; "B" did NOT happen; Custom note: what if Rome won');
+eq("changes.two", buildChangesString([t("1", false, "A"), t("2", false, "B")]), '"A" did NOT happen; "B" did NOT happen');
 
 console.log(fail === 0 ? "\nALL PARITY CHECKS PASSED" : `\n${fail} PARITY FAILURE(S)`);
 process.exit(fail === 0 ? 0 : 1);

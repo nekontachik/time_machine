@@ -5,17 +5,12 @@
  */
 import type { EventToggle } from "@/types";
 
-export function buildChangesString(
-  events: EventToggle[],
-  customText?: string
-): string {
+export function buildChangesString(events: EventToggle[]): string {
   const changedEvents = events
     .filter((e) => !e.happened)
     .map((e) =>
       e.title ? `"${e.title}" did NOT happen` : `event ${e.id} did NOT happen`
     );
-
-  if (customText) changedEvents.push(`Custom note: ${customText}`);
 
   return changedEvents.length > 0
     ? changedEvents.join("; ")

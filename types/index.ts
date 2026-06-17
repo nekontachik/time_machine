@@ -27,7 +27,6 @@ export interface PremiumOptions {
 export interface ScenarioRequest {
   year: number;
   events: EventToggle[];
-  customText?: string;
   lang: Lang;
   premium?: PremiumOptions;
 }
