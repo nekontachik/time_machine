@@ -16,7 +16,6 @@ as a cheap CI smoke test — it answers a different question.
 |---|---|
 | Define dimensions | `dimensions.ts` — Era, Historical Density, Counterfactual Complexity, Language |
 | Write 20 tuples by hand | `tuples.ts` — 20 tuples targeting failure hypotheses |
-| Convert tuples → queries (separate prompt) | `naturalize.ts` — 2-step draft → clean of the free-text "custom note" |
 | Run through the real system | `runTraces.ts` — real `generateEventTitles` + real scenario prompt |
 | Sample ~100 traces | 20 tuples × 5 runs = 100 → `out/traces.jsonl` |
 
@@ -45,7 +44,6 @@ by event *index*, peripheral vs central would blur. So complexity is re-anchored
 - `central`    = remove the **highest**-impact event
 - `compound`   = remove the two highest
 - `none`       = remove nothing (does the model still write a counterfactual?)
-- `custom`     = remove highest + a naturalized user "what-if" note
 
 `assertSeparable()` flags the degenerate case where all 3 events share one impact
 tier (then the axis genuinely collapses and that trace is marked `separable.ok=false`
@@ -64,12 +62,12 @@ npm run eval:traces -- --limit 3    # first 3 tuples only
 ```
 
 Output: `out/traces.jsonl` (gitignored), one JSON object per line:
-`{ traceId, tupleId, dims, year, lang, events, disabledIds, separable, customText, changes, output, latencyMs, totalTokens, paragraphCount }`
+`{ traceId, tupleId, dims, year, lang, events, disabledIds, separable, changes, output, latencyMs, totalTokens, paragraphCount }`
 
 ## Next: open coding
 
 Read every trace and jot a short free-text note on anything wrong: anachronism,
 hallucinated specifics, English leakage in a non-EN trace, broke the "2025 in this
-timeline" frame, ignored the custom note, wrong paragraph count, narrated real
+timeline" frame, wrong paragraph count, narrated real
 history instead of a counterfactual (`none`), incoherent cascade (`compound`).
 Then group the notes into a taxonomy — that taxonomy is what your judges will score.

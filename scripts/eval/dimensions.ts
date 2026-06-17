@@ -61,17 +61,8 @@ export const COMPLEXITIES = [
   "peripheral", // disable lowest-impact event — small, contained divergence
   "central", // disable highest-impact event — large divergence
   "compound", // disable two events — entangled cascade
-  "custom", // disable highest-impact + a free-text user "what-if" note
 ] as const;
 export type Complexity = (typeof COMPLEXITIES)[number];
-
-export const COMPLEXITY_NEEDS_CUSTOM_TEXT: Record<Complexity, boolean> = {
-  none: false,
-  peripheral: false,
-  central: false,
-  compound: false,
-  custom: true,
-};
 
 // --- Language: NOT a dimension ---------------------------------------------
 // The product ships in ONE language (English), so language is held CONSTANT,
@@ -118,7 +109,6 @@ export function selectDisabled(
       disabled = ranked.slice(-1); // lowest impact
       break;
     case "central":
-    case "custom":
       disabled = ranked.slice(0, 1); // highest impact
       break;
     case "compound":
