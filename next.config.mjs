@@ -1,5 +1,4 @@
 import withPWA from "next-pwa";
-import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -40,28 +39,10 @@ const nextConfig = {
 const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
+  // next-pwa wrongly tries to precache App Router build manifests that 404 in
+  // production, which makes the service worker install fail with
+  // "bad-precaching-response". Exclude them from the precache manifest.
+  buildExcludes: [/app-build-manifest\.json$/, /_next\/app-build-manifest\.json$/],
 })(nextConfig);
 
-export default withSentryConfig(pwaConfig, {
-  // Sentry org + project — set via Vercel env vars
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-
-  // Source map upload — only runs when SENTRY_AUTH_TOKEN is present (CI/Vercel)
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Suppress Sentry build output for cleaner CI logs
-  silent: true,
-
-  // Disable telemetry
-  telemetry: false,
-
-  // Webpack-level Sentry settings (migrated from deprecated top-level options)
-  webpack: {
-    autoInstrumentServerFunctions: true,
-    autoInstrumentMiddleware: true,
-    treeshake: {
-      removeDebugLogging: true,
-    },
-  },
-});
+export default pwaConfig;
