@@ -8,6 +8,7 @@
  *                    Use this to validate the pipeline + coverage for free.
  *   --runs N         runs per tuple (default 5 -> 20 tuples x 5 = 100 traces).
  *   --limit N        only the first N tuples (smoke test).
+ *   --complexity C   only tuples of complexity C (none|peripheral|central|compound).
  *   --out PATH       output JSONL (default scripts/eval/out/traces.jsonl).
  *
  * Pipeline per run (faithful to the product):
@@ -50,6 +51,7 @@ const DRY = has("--dry-run");
 const RUNS = parseInt(val("--runs", "5"), 10);
 const LIMIT = parseInt(val("--limit", String(TUPLES.length)), 10);
 const OUT = val("--out", "scripts/eval/out/traces.jsonl");
+const COMPLEXITY = val("--complexity", ""); // none|peripheral|central|compound; "" = all
 
 // --- dry-run stubs ---------------------------------------------------------
 function stubEvents(year: number): HistoricalEvent[] {
@@ -88,19 +90,27 @@ async function main() {
   console.log("=== Time Machine — Trace Harness ===");
   console.log(DRY ? "(dry-run: no network)\n" : "(live)\n");
   console.log(coverageReport());
-  console.log(`\nplan: ${Math.min(LIMIT, TUPLES.length)} tuples x ${RUNS} runs = ` +
-    `${Math.min(LIMIT, TUPLES.length) * RUNS} traces -> ${OUT}\n`);
+
+  const tuples = TUPLES.slice(0, LIMIT).filter(
+    (t) => !COMPLEXITY || t.complexity === COMPLEXITY
+  );
+  const total = tuples.length * RUNS;
+  console.log(
+    `\nplan: ${tuples.length} tuples${COMPLEXITY ? ` (complexity=${COMPLEXITY})` : ""} ` +
+      `x ${RUNS} runs = ${total} traces -> ${OUT}\n`
+  );
 
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, "");
-
-  const tuples = TUPLES.slice(0, LIMIT);
   let n = 0;
   let collapsed = 0;
   const latencies: number[] = [];
 
   for (const t of tuples) {
     for (let run = 1; run <= RUNS; run++) {
+      const idx = n + 1;
+      const t0 = Date.now();
+      process.stdout.write(`[${idx}/${total}] ${t.id} r${run} (${t.complexity}) generating… `);
       try {
         const events = await getEvents(t.year, PRODUCT_LANG);
         const sep = assertSeparable(events);
@@ -152,9 +162,8 @@ async function main() {
 
         appendFileSync(OUT, JSON.stringify(trace) + "\n");
         n++;
-        process.stdout.write(
-          `\r${n} traces  (last: ${t.id} r${run}, ${t.complexity}/${PRODUCT_LANG}, ` +
-            `paras=${paragraphCount}${sep.ok ? "" : ", COLLAPSED"})        `
+        console.log(
+          `done ${Date.now() - t0}ms · paras=${paragraphCount}${sep.ok ? "" : " ⚠ COLLAPSED"} · saved ${n}/${total}`
         );
       } catch (err) {
         console.error(`\n!! ${t.id} r${run}: ${err instanceof Error ? err.message : err}`);

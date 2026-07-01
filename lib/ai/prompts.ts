@@ -11,6 +11,7 @@
  */
 import type { HistoricalEvent } from "@/types";
 import { EVENTS_MODEL, SCENARIO_MODEL } from "@/constants";
+import { NO_CHANGES_SENTINEL } from "@/lib/ai/changes";
 
 export interface ChatMessage {
   role: "system" | "user";
@@ -144,6 +145,18 @@ export function scenarioPrompt({
     ? ` Focus on impact on ${premium.city}, ${premium.country}.`
     : "";
 
+  // When the user changed nothing, "Changed events: all events happened as
+  // recorded" + "write an alternative history" is a contradiction that makes the
+  // model recap real history (TAXONOMY.md: none-recap — the #1 failure mode).
+  // Resolve it by instructing the model to pick its own divergence. The branch
+  // for actual changes is kept byte-identical to the original prompt.
+  const divergence =
+    changes.trim() === NO_CHANGES_SENTINEL
+      ? `No event was removed. Choose the single most consequential event of ${yearLabel(
+          year
+        )} yourself and write the timeline in which it unfolded differently. Do NOT retell real history — this must be a genuine counterfactual.`
+      : `Changed events: ${changes}.`;
+
   return {
     model: SCENARIO_MODEL,
     maxTokens: 2048,
@@ -155,7 +168,7 @@ export function scenarioPrompt({
       },
       {
         role: "user",
-        content: `Year: ${year}. Changed events: ${changes}.
+        content: `Year: ${year}. ${divergence}
 
 Write an alternative history in exactly 3 paragraphs. Output language: ${lang}.
 
