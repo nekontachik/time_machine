@@ -10,7 +10,7 @@ export const MAX_YEAR = 2024;
 // ---------------------------------------------------------------------------
 
 /** OpenRouter model for fast historical event generation */
-export const EVENTS_MODEL = "google/gemini-3.5-flash";
+export const EVENTS_MODEL = "google/gemini-3.1-flash-lite";
 
 /** OpenRouter model for rich alternative-history scenario generation */
 export const SCENARIO_MODEL = "anthropic/claude-sonnet-4.6";

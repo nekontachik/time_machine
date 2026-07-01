@@ -11,6 +11,7 @@
  */
 import type { HistoricalEvent } from "@/types";
 import { EVENTS_MODEL, SCENARIO_MODEL } from "@/constants";
+import { NO_CHANGES_SENTINEL } from "@/lib/ai/changes";
 
 export interface ChatMessage {
   role: "system" | "user";
@@ -21,12 +22,53 @@ export interface PromptSpec {
   model: string;
   maxTokens: number;
   messages: ChatMessage[];
+  /** Optional OpenRouter/OpenAI response_format (e.g. json_schema structured output). */
+  responseFormat?: unknown;
 }
 
-/** Parse the model's event-titles JSON (strips markdown fences). Shared with the harness. */
+/**
+ * Structured-output schema for event generation. Forcing a json_schema
+ * response makes it impossible for the model to return malformed/truncated
+ * JSON. The array is wrapped in an object because structured outputs require
+ * an object at the schema root.
+ */
+export const EVENT_TITLES_RESPONSE_FORMAT = {
+  type: "json_schema",
+  json_schema: {
+    name: "historical_events",
+    strict: true,
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["events"],
+      properties: {
+        events: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["id", "title", "description", "impact"],
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              description: { type: "string" },
+              impact: { type: "string", enum: ["high", "medium", "low"] },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+/** Parse the model's event-titles JSON. Tolerant of both a bare array and the
+ *  structured-output {events:[...]} object. Shared with the harness. */
 export function parseEventTitles(text: string): HistoricalEvent[] {
   const clean = text.replace(/```json\n?|\n?```/g, "").trim();
-  return JSON.parse(clean) as HistoricalEvent[];
+  const parsed = JSON.parse(clean);
+  const events = Array.isArray(parsed) ? parsed : parsed?.events;
+  if (!Array.isArray(events)) throw new Error("Model returned no events array");
+  return events as HistoricalEvent[];
 }
 
 /** Human-readable year label: negative years become "N BCE". */
@@ -38,7 +80,8 @@ export function yearLabel(year: number): string {
 export function eventTitlesPrompt(year: number, lang: string): PromptSpec {
   return {
     model: EVENTS_MODEL,
-    maxTokens: 512,
+    maxTokens: 1024,
+    responseFormat: EVENT_TITLES_RESPONSE_FORMAT,
     messages: [
       {
         role: "system",
@@ -47,9 +90,7 @@ export function eventTitlesPrompt(year: number, lang: string): PromptSpec {
       },
       {
         role: "user",
-        content: `Return a JSON array of exactly 3 key events from the year ${yearLabel(
-          year
-        )}.
+        content: `Return exactly 3 key events from the year ${yearLabel(year)}.
 Rules:
 - Cover diverse domains: politics, science/tech, culture, military, social/economic — not all the same type.
 - Each description must be 2–3 sentences: what happened, why it mattered, what it changed.
@@ -57,7 +98,7 @@ Rules:
 - Impact: "high" = shaped a decade or more; "medium" = notable regional/global effect; "low" = culturally significant but limited direct consequence.
 - Sort by impact descending.
 - Output language: ${lang}.
-Format: [{"id":"1","title":"...","description":"...","impact":"high|medium|low"}]`,
+Return a JSON object {"events":[{"id":"1","title":"...","description":"...","impact":"high|medium|low"}]} with exactly 3 items.`,
       },
     ],
   };
@@ -104,6 +145,18 @@ export function scenarioPrompt({
     ? ` Focus on impact on ${premium.city}, ${premium.country}.`
     : "";
 
+  // When the user changed nothing, "Changed events: all events happened as
+  // recorded" + "write an alternative history" is a contradiction that makes the
+  // model recap real history (TAXONOMY.md: none-recap — the #1 failure mode).
+  // Resolve it by instructing the model to pick its own divergence. The branch
+  // for actual changes is kept byte-identical to the original prompt.
+  const divergence =
+    changes.trim() === NO_CHANGES_SENTINEL
+      ? `No event was removed. Choose the single most consequential event of ${yearLabel(
+          year
+        )} yourself and write the timeline in which it unfolded differently. Do NOT retell real history — this must be a genuine counterfactual.`
+      : `Changed events: ${changes}.`;
+
   return {
     model: SCENARIO_MODEL,
     maxTokens: 2048,
@@ -115,7 +168,7 @@ export function scenarioPrompt({
       },
       {
         role: "user",
-        content: `Year: ${year}. Changed events: ${changes}.
+        content: `Year: ${year}. ${divergence}
 
 Write an alternative history in exactly 3 paragraphs. Output language: ${lang}.
 

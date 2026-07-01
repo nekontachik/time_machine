@@ -36,6 +36,7 @@ export async function generateEventTitles(
     model: spec.model,
     max_tokens: spec.maxTokens,
     messages: spec.messages,
+    response_format: spec.responseFormat as any,
   });
 
   const text = response.choices[0]?.message?.content;

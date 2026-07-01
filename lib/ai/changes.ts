@@ -5,6 +5,11 @@
  */
 import type { EventToggle } from "@/types";
 
+/** Sentinel returned when the user toggled nothing off. Shared with
+ *  scenarioPrompt so it can detect the "no change" case and avoid the
+ *  none-recap failure mode (see TAXONOMY.md). */
+export const NO_CHANGES_SENTINEL = "all events happened as recorded";
+
 export function buildChangesString(events: EventToggle[]): string {
   const changedEvents = events
     .filter((e) => !e.happened)
@@ -14,5 +19,5 @@ export function buildChangesString(events: EventToggle[]): string {
 
   return changedEvents.length > 0
     ? changedEvents.join("; ")
-    : "all events happened as recorded";
+    : NO_CHANGES_SENTINEL;
 }
