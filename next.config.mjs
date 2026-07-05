@@ -39,6 +39,11 @@ const nextConfig = {
 const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
+  // Take control immediately on new deploys instead of waiting for all tabs to
+  // close. Without these, returning visitors keep running the previously cached
+  // build (old service worker stays in control) until they manually clear it.
+  skipWaiting: true,
+  clientsClaim: true,
   // next-pwa wrongly tries to precache App Router build manifests that 404 in
   // production, which makes the service worker install fail with
   // "bad-precaching-response". Exclude them from the precache manifest.
