@@ -40,7 +40,11 @@
     "test:component": "vitest run --config config/vitest.component.config.ts",
     "prepare": "husky",
     "eval:traces": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts",
-    "eval:traces:dry": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts --dry-run"
+    "eval:traces:dry": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts --dry-run",
+    "eval:judge": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runJudge.ts",
+    "eval:judge:dry": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runJudge.ts --dry-run",
+    "eval:judge:score": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runJudge.ts --score-only",
+    "eval:judge:recap": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runJudge.ts --judge recap"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.4",
