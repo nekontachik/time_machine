@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Any
 
 from deepeval.metrics import BaseMetric
-from deepeval.test_cases import LLMTestCase
+from deepeval.test_case import LLMTestCase
 
 from payoff_judge_core import (
     judge_model,
@@ -57,9 +57,9 @@ class PayoffMetric(BaseMetric):
         # Judge exactly what the TS runner judges: the present-day beat, extracted
         # from the full story (actual_output), plus the divergence year.
         beat = present_day_beat(test_case.actual_output or "")
-        meta = test_case.additional_metadata or {}
+        meta = test_case.metadata or {}
         if "year" not in meta:
-            raise ValueError("LLMTestCase.additional_metadata must include 'year'")
+            raise ValueError("LLMTestCase.metadata must include 'year'")
         year = int(meta["year"])
 
         api_key = require_api_key()
