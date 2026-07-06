@@ -59,3 +59,11 @@ next-env.d.ts
 
 # Eval harness output
 scripts/eval/out/
+
+# Python venv + caches
+.venv/
+__pycache__/
+
+# DeepEval wrapper — transient run artifacts (regenerated live)
+scripts/eval/deepeval/ts_verdicts.jsonl
+scripts/eval/deepeval/prompt_fixtures.jsonl
