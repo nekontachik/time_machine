@@ -62,3 +62,15 @@ next-env.d.ts
 # 2026-07-10 overwrite incident in scripts/eval/langfuse/README.md).
 # Only throwaway dry-run output stays ignored:
 scripts/eval/out/dryrun/
+
+# Python venv + caches (DeepEval wrapper)
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.deepeval/
+
+# DeepEval wrapper — transient run artifacts (regenerated live)
+scripts/eval/deepeval/ts_verdicts.jsonl
+scripts/eval/deepeval/prompt_fixtures.jsonl
