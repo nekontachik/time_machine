@@ -17,12 +17,12 @@ def _fake_key(monkeypatch):
 
 
 def _make_case():
-    from deepeval.test_cases import LLMTestCase
+    from deepeval.test_case import LLMTestCase
 
     return LLMTestCase(
         input="beat",
         actual_output="Para one.\n\nPresent-day beat here.",
-        additional_metadata={"year": 1969, "traceId": "T00-r0"},
+        metadata={"year": 1969, "traceId": "T00-r0"},
     )
 
 

@@ -26,11 +26,11 @@ def iter_traces(path: str) -> Iterator[Dict[str, Any]]:
 
 def build_test_case(trace: Dict[str, Any]):
     """input = the present-day beat actually judged; actual_output = full story."""
-    from deepeval.test_cases import LLMTestCase
+    from deepeval.test_case import LLMTestCase
 
     output = trace["output"]
     return LLMTestCase(
         input=present_day_beat(output),
         actual_output=output,
-        additional_metadata={"year": trace["year"], "traceId": trace.get("traceId")},
+        metadata={"year": trace["year"], "traceId": trace.get("traceId")},
     )
