@@ -38,6 +38,7 @@
     "check:server-only": "bash scripts/check-server-only.sh",
     "eval": "npx tsx scripts/eval-harness.ts",
     "test:component": "vitest run --config config/vitest.component.config.ts",
+    "redteam:verify": "node redteam/selfcheck.mjs",
     "prepare": "husky",
     "eval:traces": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts",
     "eval:traces:dry": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts --dry-run",

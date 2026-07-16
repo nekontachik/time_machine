@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamScenario } from "@/lib/ai/text";
-import { buildChangesString } from "@/lib/ai/changes";
+import { buildChangesString, validateScenarioEvents } from "@/lib/ai/changes";
 import { checkRateLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
 import { MIN_YEAR, MAX_YEAR } from "@/constants";
 import type { ScenarioRequest } from "@/types";
@@ -40,6 +40,13 @@ export async function POST(req: NextRequest) {
       { error: `year out of range (${MIN_YEAR}–${MAX_YEAR})` },
       { status: 400 }
     );
+  }
+
+  // Server-side trust boundary: validate the events contract before any of it
+  // reaches the model prompt (see redteam/VULN_TAXONOMY.md).
+  const eventsError = validateScenarioEvents(events);
+  if (eventsError) {
+    return NextResponse.json({ error: eventsError }, { status: 400 });
   }
 
   const changes = buildChangesString(events);
