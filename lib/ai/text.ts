@@ -105,7 +105,13 @@ export async function streamScenario({
   lang: string;
   premium?: { country: string; city: string };
 }): Promise<ReadableStream<Uint8Array>> {
-  const spec = scenarioPrompt({ year, changes, lang, premium });
+  const spec = scenarioPrompt({
+    year,
+    changes,
+    lang,
+    premium,
+    canary: process.env.REDTEAM_CANARY, // red-team only; undefined in prod
+  });
 
   const stream = await client.chat.completions.create({
     model: spec.model,
