@@ -127,23 +127,47 @@ export function selectDisabled(
 }
 
 /**
- * The 5->3 guardrail. peripheral vs central only carry distinct meaning if the
- * 3 events span more than one impact tier. Returns false (with a reason) when
- * the axis has collapsed for this particular event set.
+ * Separability guardrail — is a trace's complexity axis actually meaningful for
+ * THIS event set? The check is complexity-AWARE, because each complexity needs
+ * something different:
+ *   - none      : removes nothing       -> always fine
+ *   - central   : removes the top event -> needs >=1 event (no tier spread needed)
+ *   - compound  : removes the top two   -> needs >=2 events (no tier spread needed)
+ *   - peripheral: removes the LOWEST    -> needs >=2 events AND >=2 impact tiers,
+ *                 else "remove the small one" is indistinguishable from "remove
+ *                 the big one" and the trace would be mislabelled.
+ *
+ * The earlier version flagged single-tier sets for EVERY complexity, which
+ * false-alarmed on central/compound/none (where tier spread is irrelevant). The
+ * genuine collapse only ever affects `peripheral`.
  */
-export function assertSeparable(events: HistoricalEvent[]): {
-  ok: boolean;
-  reason?: string;
-} {
-  const tiers = new Set(events.map((e) => e.impact));
-  if (events.length < 2) {
-    return { ok: false, reason: `only ${events.length} event(s) generated` };
+export function assertSeparable(
+  events: HistoricalEvent[],
+  complexity: Complexity
+): { ok: boolean; reason?: string } {
+  switch (complexity) {
+    case "none":
+      return { ok: true };
+    case "central":
+      return events.length >= 1
+        ? { ok: true }
+        : { ok: false, reason: "central needs >=1 event, got 0" };
+    case "compound":
+      return events.length >= 2
+        ? { ok: true }
+        : { ok: false, reason: `compound needs >=2 events, got ${events.length}` };
+    case "peripheral": {
+      if (events.length < 2) {
+        return { ok: false, reason: `peripheral needs >=2 events, got ${events.length}` };
+      }
+      const tiers = new Set(events.map((e) => e.impact));
+      if (tiers.size < 2) {
+        return {
+          ok: false,
+          reason: `peripheral needs an impact-tier spread; all ${events.length} events are "${Array.from(tiers)[0]}" — a "small" removal is indistinguishable from a "big" one`,
+        };
+      }
+      return { ok: true };
+    }
   }
-  if (tiers.size < 2) {
-    return {
-      ok: false,
-      reason: `all ${events.length} events share impact tier "${Array.from(tiers)[0]}" — peripheral/central collapse`,
-    };
-  }
-  return { ok: true };
 }
