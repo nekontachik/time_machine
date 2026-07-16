@@ -135,7 +135,7 @@ async function main() {
       process.stdout.write(`[${idx}/${total}] ${t.id} r${run} (${t.complexity}) generating… `);
       try {
         const events = await getEvents(t.year, PRODUCT_LANG);
-        const sep = assertSeparable(events);
+        const sep = assertSeparable(events, t.complexity);
         if (!sep.ok) collapsed++;
 
         const { toggles, disabledIds } = selectDisabled(events, t.complexity);
