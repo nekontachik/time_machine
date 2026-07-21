@@ -14,6 +14,12 @@
  *   score-create      → окремі сутності з різними іменами:
  *                       "payoff-judge" (вердикт судді) vs "human-payoff" (ground truth)
  *
+ * ІНЦИДЕНТ (2026-07-10): scripts/eval/out/traces.jsonl (calib-ран) було затерто
+ * dry-run перегенерацією — реальні сценарії замінені стабами. Оцінюваний текст
+ * (фінальний абзац, світ-2025) вцілів у evals1/payoff-review.md — для calib
+ * output відновлюється звідти. Стабові числа (latency=0, tokens=0, фейкові
+ * events, ts перегенерації) НЕ заливаються. Див. README, розділ "Інцидент".
+ *
  * НЕ змінює: харнес, суддю, gold set, продуктовий код. Це паралельний шар.
  */
 
@@ -52,22 +58,35 @@ type TraceRec = {
   output: string;
 };
 
-/** Два рани. runId йде в id трейсу (T01-r1 існує в ОБОХ файлах — колізія),
- *  в metadata і в tags. */
-const RUNS = [
+type RunCfg = {
+  runId: string;
+  traces: string;
+  report: string;
+  gold: string | null;
+  kind: "calibration" | "score-only";
+  /** Якщо задано — output трейсів затерто; відновлюємо з цього review-файла,
+   *  а стабові числа (latency/tokens/ts/events) ігноруємо. */
+  recoverOutputsFrom?: string;
+  /** Приблизна дата рану, якщо оригінальні ts втрачено. */
+  approxDate?: string;
+};
+
+const RUNS: RunCfg[] = [
   {
     runId: "calib",
     traces: "scripts/eval/out/traces.jsonl",
     report: "scripts/eval/out/payoff-judge.md", // calibration: confusion matrix + disagreements
     gold: "evals1/payoff-review.md",
-    kind: "calibration" as const,
+    kind: "calibration",
+    recoverOutputsFrom: "evals1/payoff-review.md",
+    approxDate: "2026-06-26T12:00:00.000Z", // дата ручної розмітки (created: у review)
   },
   {
     runId: "prod100",
     traces: "scripts/eval/out/product_100.jsonl",
     report: "scripts/eval/out/product_100-score.md", // score-only: таблиця fail-трейсів
     gold: null,
-    kind: "score-only" as const,
+    kind: "score-only",
   },
 ];
 
@@ -95,6 +114,19 @@ function loadGold(path: string): Map<string, "fail" | "good"> {
   return m;
 }
 
+/** Відновлення оцінюваного тексту (фінальний абзац, світ-2025) з review-файла.
+ *  Формат блоку: "### Txx-ry — ...\n\n> <абзац>\n\n**Твоя нотатка:** ..." */
+function loadReviewOutputs(path: string): Map<string, string> {
+  const txt = readFileSync(path, "utf-8");
+  const blocks = txt.split(/\n### (T\d+-r\d+)/);
+  const m = new Map<string, string>();
+  for (let i = 1; i < blocks.length; i += 2) {
+    const par = blocks[i + 1].match(/\n> (.+)\n/)?.[1];
+    if (par) m.set(blocks[i].trim(), par.trim());
+  }
+  return m;
+}
+
 /** Рядки таблиць звітів судді: `| T15-r3 | central | ... |` */
 function mdRows(path: string): string[][] {
   return readFileSync(path, "utf-8")
@@ -108,7 +140,7 @@ function mdRows(path: string): string[][] {
  *  (cols: traceId | complexity | gold | judge | reason | snippet).
  *  score-only: всі pass, КРІМ таблиці fail (cols: traceId | complexity | reason). */
 function judgeVerdicts(
-  run: (typeof RUNS)[number],
+  run: RunCfg,
   gold: Map<string, "fail" | "good"> | null,
   ids: string[]
 ): Map<string, { pass: boolean; reason: string }> {
@@ -148,71 +180,111 @@ function ev(type: string, body: Record<string, unknown>): IngestEvent {
   return { id: randomUUID(), type, timestamp: new Date().toISOString(), body };
 }
 
-function buildEvents(run: (typeof RUNS)[number]): IngestEvent[] {
+const LOST_NOTE =
+  "traces.jsonl overwritten by dry-run regeneration on 2026-07-10; " +
+  "output recovered from evals1/payoff-review.md (final paragraph only). " +
+  "Lost beyond recovery: first two paragraphs, real events list, latency, tokens, original timestamps.";
+
+function buildEvents(run: RunCfg): IngestEvent[] {
   const traces = loadJsonl(run.traces);
   const gold = run.gold ? loadGold(run.gold) : null;
   const judge = judgeVerdicts(run, gold, traces.map((t) => t.traceId));
+  const recovered = run.recoverOutputsFrom ? loadReviewOutputs(run.recoverOutputsFrom) : null;
   const out: IngestEvent[] = [];
+  let skipped = 0;
 
   for (const t of traces) {
     const traceId = `${run.runId}-${t.traceId}`; // T01-r1 є в обох ранах
-    const end = new Date(t.ts);
-    const scenarioStart = new Date(end.getTime() - t.latencyMs);
+
+    // Режим відновлення: стабовий текст із затертого файла НЕ заливаємо ніколи.
+    let output = t.output;
+    let traceTs = t.ts;
+    if (recovered) {
+      const rec = recovered.get(t.traceId);
+      if (!rec) {
+        console.warn(`skip ${traceId}: no recovered output in ${run.recoverOutputsFrom}`);
+        skipped++;
+        continue;
+      }
+      output = rec;
+      traceTs = run.approxDate ?? t.ts;
+    }
 
     // trace = один повний прогін пайплайну
     out.push(
       ev("trace-create", {
         id: traceId,
-        timestamp: t.ts,
+        timestamp: traceTs,
         name: "alt-history-pipeline",
         input: { year: t.year, lang: t.lang, complexity: t.dims.complexity },
-        output: t.output,
+        output,
         metadata: {
           runId: run.runId,
           tupleId: t.tupleId,
           run: t.run,
-          dims: t.dims,
+          dims: t.dims, // детерміновані з tuples.ts — автентичні і для відновленого рану
           hypothesis: t.hypothesis,
           scenarioModel: t.scenarioModel,
-          paragraphCount: t.paragraphCount,
-          separable: t.separable?.ok,
+          ...(recovered
+            ? { reconstruction: LOST_NOTE, timestampNote: "approximate (labeling date)" }
+            : { paragraphCount: t.paragraphCount, separable: t.separable?.ok }),
         },
         tags: [
           run.runId,
           `complexity:${t.dims.complexity}`,
           `era:${t.dims.era}`,
           `density:${t.dims.density}`,
+          ...(recovered ? ["recovered-output"] : []),
         ],
       })
     );
 
-    // span 1: events-стадія (Gemini). Таймінг/модель НЕ записані в source JSONL —
-    // backfill чесно лишає їх порожніми (межа того, що було залоговано).
+    // span 1: events-стадія (Gemini).
+    // prod100: model/latency/tokens не логувались у source JSONL (межа логування).
+    // calib: events затерті стабами — контент втрачено, лишаємо лише структуру стадії.
     out.push(
       ev("generation-create", {
         id: `${traceId}-events`,
         traceId,
         name: "events-generation",
-        startTime: t.ts,
+        startTime: traceTs,
         input: { year: t.year, lang: t.lang },
-        output: { events: t.events, disabledIds: t.disabledIds, changes: t.changes },
-        metadata: { note: "model/latency/tokens not persisted in source JSONL (backfill limitation)" },
+        ...(recovered
+          ? { metadata: { note: "stage content lost — " + LOST_NOTE } }
+          : {
+              output: { events: t.events, disabledIds: t.disabledIds, changes: t.changes },
+              metadata: {
+                note: "model/latency/tokens not persisted in source JSONL (backfill limitation)",
+              },
+            }),
       })
     );
 
-    // span 2: scenario-стадія (Claude). startTime ≈ ts - latencyMs (апроксимація).
+    // span 2: scenario-стадія (Claude).
+    // prod100: startTime ≈ ts - latencyMs (апроксимація), usage = totalTokens.
+    // calib: latency/tokens = стабові нулі → не заливаємо; output = відновлений абзац.
     out.push(
       ev("generation-create", {
         id: `${traceId}-scenario`,
         traceId,
         name: "scenario-generation",
-        startTime: scenarioStart.toISOString(),
-        endTime: t.ts,
         model: t.scenarioModel,
-        input: { events: t.events, disabledIds: t.disabledIds, changes: t.changes },
-        output: t.output,
-        usage: { total: t.totalTokens },
-        metadata: { latencyMs: t.latencyMs, note: "exact prompt not persisted; input = its arguments" },
+        output,
+        ...(recovered
+          ? {
+              startTime: traceTs,
+              metadata: { note: "latency/tokens/prompt lost — " + LOST_NOTE },
+            }
+          : {
+              startTime: new Date(new Date(t.ts).getTime() - t.latencyMs).toISOString(),
+              endTime: t.ts,
+              input: { events: t.events, disabledIds: t.disabledIds, changes: t.changes },
+              usage: { total: t.totalTokens },
+              metadata: {
+                latencyMs: t.latencyMs,
+                note: "exact prompt not persisted; input = its arguments",
+              },
+            }),
       })
     );
 
@@ -244,6 +316,7 @@ function buildEvents(run: (typeof RUNS)[number]): IngestEvent[] {
         })
       );
   }
+  if (skipped) console.warn(`[${run.runId}] skipped ${skipped} traces without recovered output`);
   return out;
 }
 
@@ -273,10 +346,10 @@ async function main() {
   for (const run of RUNS) {
     const events = buildEvents(run);
     const byType = events.reduce<Record<string, number>>((a, e) => {
-      a[e.body["name"] === "human-payoff" ? "score:human" :
-        e.body["name"] === "payoff-judge" ? "score:judge" : e.type] =
-        (a[e.body["name"] === "human-payoff" ? "score:human" :
-           e.body["name"] === "payoff-judge" ? "score:judge" : e.type] ?? 0) + 1;
+      const key =
+        e.body["name"] === "human-payoff" ? "score:human" :
+        e.body["name"] === "payoff-judge" ? "score:judge" : e.type;
+      a[key] = (a[key] ?? 0) + 1;
       return a;
     }, {});
     console.log(`[${run.runId}] ${run.kind}:`, JSON.stringify(byType));
@@ -285,8 +358,11 @@ async function main() {
   console.log(`total ingestion events: ${all.length}`);
 
   if (DRY) {
-    console.log("\n--dry-run: sample trace-create event:\n");
-    console.log(JSON.stringify(all.find((e) => e.type === "trace-create"), null, 2));
+    const sample = all.find(
+      (e) => e.type === "trace-create" && (e.body["id"] as string).startsWith("calib-")
+    );
+    console.log("\n--dry-run: sample calib trace-create (перевір, що output — реальний текст, не [DRY-RUN]):\n");
+    console.log(JSON.stringify(sample, null, 2));
     return;
   }
   if (!PK || !SK) throw new Error("LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY missing in .env.local");
