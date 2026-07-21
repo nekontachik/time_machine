@@ -109,7 +109,10 @@ const LABELS = val("--labels", cfg.defaultLabels);
 const FORCE = has("--force");
 const STAMP = new Date().toISOString().slice(0, 10);
 const MODE = SCORE_ONLY ? "score" : "judge";
-const OUT = val("--out", `scripts/eval/out/${JUDGE}-${MODE}-${STAMP}.md`);
+const OUT = val(
+  "--out",
+  `scripts/eval/out/${DRY ? "dryrun/" : ""}${JUDGE}-${MODE}-${STAMP}.md`
+);
 const VERDICTS = val(
   "--verdicts",
   OUT.replace(/\.md$/, "") + "-verdicts.jsonl"
