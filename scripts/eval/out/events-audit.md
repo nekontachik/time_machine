@@ -1,0 +1,141 @@
+---
+tags: [eval, time-machine, events-audit]
+created: 2026-06-22
+traces: 100 · distinct event-sets: 94
+---
+
+# Time Machine — Events Audit (рік / події)
+
+Перевіряємо генерацію подій Gemini, **без читання історій** і **без знання дат**. Два code-сигнали нижче: **TOP-незгода** (наскільки головна подія року «плаває» між прогонами) та **density** (твоя мітка задокументованості). Читай їх **разом**:
+
+- 🔴 **висока незгода + density=low** → справжня підозра (рідкісний рік, модель вгадує)
+- 🟡 **висока незгода + НЕ low** → ймовірно просто багатоподійний рік (швидше за все ок)
+- (порожньо) → модель сходиться на головній події → низький ризик
+
+*«Висока» = TOP-незгода ≥ 35%. Незгода ≠ галюцинація — це лише «нема однієї домінантної події». Сумнівні рядки звіряй із джерелом сам.*
+
+## 1. Тріаж стабільності (почни звідси)
+
+| фокус | рік | епоха | density | TOP-незгода | приклад | ⚠ | нотатка |
+|---|---|---|---|---|---|---|---|
+| 🔴 | 3000 BCE | ancient-bce | low | 47% | T02-r1 |  |  |
+| 🔴 | 1237 | medieval | low | 39% | T09-r1 |  |  |
+| 🟡 | 1973 | contemporary | medium | 66% | T20-r1 |  |  |
+| 🟡 | 1517 | early-modern | high | 45% | T11-r1 |  |  |
+| 🟡 | 1914 | industrial | high | 40% | T16-r1 |  |  |
+| 🟡 | 1648 | early-modern | medium | 35% | T12-r1 |  |  |
+| · | 800 | medieval | medium | 28% | T07-r1 |  |  |
+| · | 1871 | industrial | medium | 24% | T17-r1 |  |  |
+| · | 753 BCE | ancient-bce | medium | 20% | T03-r1 |  |  |
+| · | 410 | classical | medium | 20% | T05-r1 |  |  |
+| · | 1066 | medieval | high | 20% | T08-r1 |  |  |
+| · | 313 | classical | medium | 13% | T06-r1 |  |  |
+| · | 1755 | early-modern | medium | 10% | T13-r1 |  |  |
+| · | 44 BCE | ancient-bce | high | 0% | T01-r1 |  |  |
+| · | 79 | classical | high | 0% | T04-r1 |  |  |
+| · | 1347 | medieval | high | 0% | T10-r1 |  |  |
+| · | 1789 | early-modern | high | 0% | T14-r1 |  |  |
+| · | 1816 | industrial | low | 0% | T15-r1 |  |  |
+| · | 1969 | contemporary | high | 0% | T18-r1 |  |  |
+| · | 1989 | contemporary | high | 0% | T19-r1 |  |  |
+
+## 2. Деталі — набори подій
+
+Один рядок = один унікальний набір подій (дедуп по прогонах). Для позначених 🔴/🟡 вище — глянь сюди, що саме модель вигадала.
+
+| рік | density | події (impact) | к-ть | приклад | ⚠ | нотатка |
+|---|---|---|---|---|---|---|
+| **3000 BCE** | low | 1. Unification of Upper and Lower Egypt (Narmer) [high]<br>2. Emergence of Indus Valley Civilization (Early Harappan Phase) [high]<br>3. Construction of the First Megalithic Temples in Malta [medium] | 1 | T02-r1 |  |  |
+| 3000 BCE | low | 1. Rise of Early Dynastic Period in Egypt [high]<br>2. Development of Cuneiform Script in Sumer [high]<br>3. Construction of Stone Circles, including Stonehenge (Phase 1) [medium] | 1 | T02-r2 |  |  |
+| 3000 BCE | low | 1. Unification of Upper and Lower Egypt (Formation of Dynastic Egypt) [high]<br>2. Emergence of Cuneiform Script in Mesopotamia [high]<br>3. Construction of Newgrange Passage Tomb [medium] | 1 | T02-r3 |  |  |
+| 3000 BCE | low | 1. Unification of Upper and Lower Egypt (Narmer) [high]<br>2. Emergence of Indus Valley Civilization (Early Harappan Phase) [medium]<br>3. Construction of Newgrange (Final Phase) [low] | 1 | T02-r4 |  |  |
+| 3000 BCE | low | 1. Unification of Upper and Lower Egypt (Narmer) [high]<br>2. Emergence of Indus Valley Civilization (Early Harappan Phase) [medium]<br>3. Construction of Newgrange (Ireland) [low] | 1 | T02-r5 |  |  |
+| **753 BCE** | medium | 1. Founding of Rome [high]<br>2. Establishment of the Roman Kingdom [high]<br>3. Inauguration of the Roman Calendar (Ab Urbe Condita) [medium] | 1 | T03-r1 |  |  |
+| 753 BCE | medium | 1. Founding of Rome [high]<br>2. Establishment of the Roman Kingdom [high]<br>3. Adoption of the Roman Calendar (Anno Urbis Conditae) [medium] | 1 | T03-r2 |  |  |
+| 753 BCE | medium | 1. Founding of the City of Rome [high]<br>2. Establishment of the Roman Monarchy [medium]<br>3. Development of the Roman Calendar (Romulan Calendar) [low] | 1 | T03-r3 |  |  |
+| 753 BCE | medium | 1. Founding of Rome [high]<br>2. Establishment of the Roman Calendar (AUC) [medium]<br>3. Inauguration of the 'Pomerium' Boundary [low] | 1 | T03-r4 |  |  |
+| 753 BCE | medium | 1. Founding of the City of Rome [high]<br>2. Establishment of the Roman Monarchy [medium]<br>3. Introduction of the Roman Calendar (Ab Urbe Condita) [low] | 1 | T03-r5 |  |  |
+| **44 BCE** | high | 1. Assassination of Julius Caesar [high]<br>2. Funeral and Deification of Julius Caesar [medium]<br>3. Establishment of the Temple of Venus Genetrix [low] | 1 | T01-r1 |  |  |
+| 44 BCE | high | 1. Assassination of Julius Caesar [high]<br>2. Caesar's Funeral and Mark Antony's Oration [medium]<br>3. Establishment of the Roman Dictatorship for Life [medium] | 1 | T01-r2 |  |  |
+| 44 BCE | high | 1. Assassination of Julius Caesar [high]<br>2. Comet Caesar Appears [medium]<br>3. Antony's Philippics [low] | 1 | T01-r3 |  |  |
+| 44 BCE | high | 1. Assassination of Julius Caesar [high]<br>2. Mark Antony's Funeral Oration for Caesar [medium]<br>3. Appearance of a Comet (Sidus Iulium) [low] | 1 | T01-r4 |  |  |
+| 44 BCE | high | 1. Assassination of Julius Caesar [high]<br>2. Rise of Octavian as a Political Force [medium]<br>3. Comet Caesar Appears [low] | 1 | T01-r5 |  |  |
+| **79** | high | 1. Eruption of Mount Vesuvius [high]<br>2. Death of Emperor Vespasian and Accession of Titus [medium]<br>3. Pliny the Elder's Death during Vesuvius Eruption [low] | 1 | T04-r1 |  |  |
+| 79 | high | 1. Eruption of Mount Vesuvius [high]<br>2. Titus Becomes Roman Emperor [medium]<br>3. Agricola's Campaigns in Britain [low] | 1 | T04-r2 |  |  |
+| 79 | high | 1. Eruption of Mount Vesuvius [high]<br>2. Titus Becomes Roman Emperor [medium]<br>3. Pliny the Elder's Death during Vesuvius Eruption [low] | 1 | T04-r3 |  |  |
+| 79 | high | 1. Eruption of Mount Vesuvius [high]<br>2. Death of Emperor Vespasian [medium]<br>3. Completion of the Colosseum (Amphitheatrum Flavium) Opening Games [low] | 1 | T04-r4 |  |  |
+| 79 | high | 1. Eruption of Mount Vesuvius [high]<br>2. Titus Becomes Roman Emperor [medium]<br>3. Agricola's Campaigns in Britain [medium] | 1 | T04-r5 |  |  |
+| **313** | medium | 1. Edict of Milan Issued [high]<br>2. Constantine Solidifies Control in the West [medium]<br>3. Traditional Roman Religious Practices Continue [low] | 1 | T06-r1 |  |  |
+| 313 | medium | 1. Edict of Milan [high]<br>2. Licinius Defeats Maximinus Daza [medium]<br>3. Death of Diocletian [low] | 1 | T06-r2 |  |  |
+| 313 | medium | 1. Edict of Milan [high]<br>2. Constantine's Victory over Maximinus Daia [medium]<br>3. Appointment of Miltiades as Bishop of Rome [low] | 1 | T06-r3 |  |  |
+| 313 | medium | 1. Edict of Milan [high]<br>2. Licinius Defeats Maximinus Daza [medium]<br>3. Lactantius's 'De Mortibus Persecutorum' Written [low] | 1 | T06-r4 |  |  |
+| 313 | medium | 1. Edict of Milan [high]<br>2. Licinius's Victory at the Battle of Tzirallum [medium]<br>3. Maximinus Daia's Persecution of Christians Continues Briefly [low] | 1 | T06-r5 |  |  |
+| **410** | medium | 1. Sack of Rome by the Visigoths [high]<br>2. Roman withdrawal from Britain [medium]<br>3. Honorius's joke about 'Rome' [low] | 1 | T05-r1 |  |  |
+| 410 | medium | 1. Sack of Rome [high]<br>2. Roman Withdrawal from Britain (Traditional Date) [medium]<br>3. Honorius's 'Chicken' Decree [low] | 1 | T05-r2 |  |  |
+| 410 | medium | 1. Sack of Rome by Visigoths [high]<br>2. Roman Withdrawal from Britain [medium]<br>3. Death of Empress Eudoxia [low] | 1 | T05-r3 |  |  |
+| 410 | medium | 1. Sack of Rome [high]<br>2. Imperial withdrawal from Britain [medium]<br>3. St. Augustine's 'City of God' initiated [medium] | 1 | T05-r4 |  |  |
+| 410 | medium | 1. Sack of Rome [high]<br>2. Roman withdrawal from Britain [high]<br>3. Alaric's Death and Succession [medium] | 1 | T05-r5 |  |  |
+| **800** | medium | 1. Charlemagne Crowned Emperor [high]<br>2. Establishment of the House of Wisdom [medium]<br>3. Viking Raids Intensify in Northern Europe [medium] | 1 | T07-r1 |  |  |
+| 800 | medium | 1. Charlemagne Crowned Emperor [high]<br>2. Establishment of the House of Wisdom Precursor [medium]<br>3. Completion of the Book of Exodus Commentary by Saadia Gaon (Pre-Birth) [low] | 1 | T07-r2 |  |  |
+| 800 | medium | 1. Coronation of Charlemagne as Emperor [high]<br>2. Completion of the 'Book of Kells' [medium]<br>3. Establishment of the Bayt al-Ḥikmah (House of Wisdom) precursor [medium] | 1 | T07-r3 |  |  |
+| 800 | medium | 1. Charlemagne Crowned Emperor of the Romans [high]<br>2. Establishment of the House of Wisdom [medium]<br>3. Viking Raids Intensify on Lindisfarne [low] | 1 | T07-r4 |  |  |
+| 800 | medium | 1. Charlemagne Crowned Emperor [high]<br>2. Establishment of the House of Wisdom [medium]<br>3. Viking Raids Intensify on Lindisfarne (Revisited) [medium] | 1 | T07-r5 |  |  |
+| **1066** | high | 1. Battle of Hastings [high]<br>2. Battle of Stamford Bridge [medium]<br>3. Halley's Comet Appearance [low] | 3 | T08-r2 |  |  |
+| 1066 | high | 1. The Battle of Hastings [high]<br>2. King Harold's Coronation [medium]<br>3. Halley's Comet Appearance [low] | 1 | T08-r1 |  |  |
+| 1066 | high | 1. Battle of Hastings and Norman Conquest [high]<br>2. Battle of Stamford Bridge [medium]<br>3. Halley's Comet Appearance [low] | 1 | T08-r5 |  |  |
+| **1237** | low | 1. Mongol Invasion of Rus' Intensifies [high]<br>2. Establishment of the University of Siena [medium]<br>3. Founding of the German Order's City of Elbing [medium] | 1 | T09-r1 |  |  |
+| 1237 | low | 1. Mongol Invasion of Kievan Rus' Begins [high]<br>2. Frederick II Grants Privileges to the German Imperial Council [medium]<br>3. Construction of Durham Cathedral's Chapel of the Nine Altars Begins [low] | 1 | T09-r2 |  |  |
+| 1237 | low | 1. Mongol Invasion of Rus' Begins [high]<br>2. Treaty of Saint-Omer [medium]<br>3. Construction of Toledo Cathedral Commences [low] | 1 | T09-r3 |  |  |
+| 1237 | low | 1. Mongol Invasion of Rus' Begins with Ryazan [high]<br>2. Treaty of Saint-Omer Divides Flanders [medium]<br>3. Completion of the Chartres Cathedral Labyrinth [low] | 1 | T09-r4 |  |  |
+| 1237 | low | 1. Mongol Invasion of Rus' Initiates [high]<br>2. Foundation of Marienburg Castle [medium]<br>3. Birth of Giovanni da Pian del Carpine [low] | 1 | T09-r5 |  |  |
+| **1347** | high | 1. The Black Death Arrives in Europe [high]<br>2. Siege of Calais [medium]<br>3. Ottoman Expansion into Southeastern Europe Begins [medium] | 1 | T10-r1 |  |  |
+| 1347 | high | 1. The Black Death Arrives in Europe [high]<br>2. Siege of Calais Concludes [medium]<br>3. Pope Clement VI Orders Jewish Protection [low] | 1 | T10-r2 |  |  |
+| 1347 | high | 1. The Black Death Arrives in Europe [high]<br>2. Siege of Calais Concluded [medium]<br>3. King Louis I of Hungary Invades Naples [low] | 1 | T10-r3 |  |  |
+| 1347 | high | 1. The Black Death Arrives in Europe [high]<br>2. Siege of Caffa and Biological Warfare Attempt [medium]<br>3. Abdication of Louis IV, Holy Roman Emperor (disputed) [low] | 1 | T10-r4 |  |  |
+| 1347 | high | 1. The Black Death Arrives in Europe [high]<br>2. Siege of Caffa and Biological Warfare [medium]<br>3. Capture of Calais by the English [medium] | 1 | T10-r5 |  |  |
+| **1517** | high | 1. Martin Luther Posts His Ninety-five Theses [high]<br>2. The Ottoman Conquest of the Mamluk Sultanate [medium]<br>3. Francisco Hernández de Córdoba's Expedition to Yucatán [low] | 1 | T11-r1 |  |  |
+| 1517 | high | 1. Martin Luther Posts His Ninety-five Theses [high]<br>2. Ottoman Conquest of the Mamluk Sultanate [high]<br>3. Beginnings of European Contact with the Chinese Ming Dynasty [medium] | 1 | T11-r2 |  |  |
+| 1517 | high | 1. Luther Posts 95 Theses, Igniting the Reformation [high]<br>2. Mamluk Sultanate Falls to the Ottoman Empire [medium]<br>3. First European Contact with the Yucatán Peninsula [medium] | 1 | T11-r3 |  |  |
+| 1517 | high | 1. Martin Luther Posts 95 Theses [high]<br>2. Ottoman Conquest of Egypt [medium]<br>3. First Europeans Arrive in Canton (Guangzhou) [low] | 1 | T11-r4 |  |  |
+| 1517 | high | 1. Luther Posts 95 Theses [high]<br>2. Ottoman Conquest of the Mamluk Sultanate [medium]<br>3. Publication of 'Utopia' in English [low] | 1 | T11-r5 |  |  |
+| **1648** | medium | 1. Peace of Westphalia Concluded [high]<br>2. Start of the Fronde [medium]<br>3. Isaac Barrow Demonstrates the First Projection Microscope [low] | 1 | T12-r1 |  |  |
+| 1648 | medium | 1. Peace of Westphalia [high]<br>2. Start of the Fronde [medium]<br>3. Issuance of the Raghunatha-Bharati Samhita [low] | 1 | T12-r2 |  |  |
+| 1648 | medium | 1. Peace of Westphalia Concludes [high]<br>2. Start of the Fronde in France [medium]<br>3. Publication of Novum Organum Novum (New Organon Novo) [low] | 1 | T12-r3 |  |  |
+| 1648 | medium | 1. Peace of Westphalia [high]<br>2. Start of the Fronde [medium]<br>3. Pascal's Puy-de-Dôme Experiment [medium] | 1 | T12-r4 |  |  |
+| 1648 | medium | 1. Peace of Westphalia Signed [high]<br>2. Start of the Fronde [medium]<br>3. Publication of Hevelius's 'Selenographia' [medium] | 1 | T12-r5 |  |  |
+| **1755** | medium | 1. The Great Lisbon Earthquake and Tsunami [high]<br>2. Outbreak of the French and Indian War [medium]<br>3. Samuel Johnson Publishes 'A Dictionary of the English Language' [medium] | 1 | T13-r1 |  |  |
+| 1755 | medium | 1. Lisbon Earthquake and Tsunami [high]<br>2. Battle of Monongahela (French and Indian War) [medium]<br>3. Samuel Johnson's Dictionary Published [medium] | 1 | T13-r2 |  |  |
+| 1755 | medium | 1. Lisbon Earthquake and Tsunami [high]<br>2. General Braddock's Defeat at the Battle of the Monongahela [medium]<br>3. Establishment of Moscow University [low] | 1 | T13-r3 |  |  |
+| 1755 | medium | 1. The Lisbon Earthquake and Tsunami [high]<br>2. Battle of Monongahela (French and Indian War) [medium]<br>3. Lexicographer Samuel Johnson Publishes his Dictionary [medium] | 1 | T13-r4 |  |  |
+| 1755 | medium | 1. Lisbon Earthquake and Tsunami [high]<br>2. Establishment of the Moscow State University [medium]<br>3. Publication of Samuel Johnson's Dictionary [medium] | 1 | T13-r5 |  |  |
+| **1789** | high | 1. Storming of the Bastille [high]<br>2. Establishment of the U.S. Federal Government [high]<br>3. Lavoisier's Traité Élémentaire de Chimie [medium] | 1 | T14-r1 |  |  |
+| 1789 | high | 1. Storming of the Bastille [high]<br>2. Inauguration of George Washington as President [medium]<br>3. Beginning of the First Ascent of Mont Blanc by women [low] | 1 | T14-r2 |  |  |
+| 1789 | high | 1. Storming of the Bastille [high]<br>2. Establishment of the United States Constitution [high]<br>3. Antoine Lavoisier publishes 'Elements of Chemistry' [medium] | 1 | T14-r3 |  |  |
+| 1789 | high | 1. Storming of the Bastille [high]<br>2. Establishment of the U.S. Federal Government [high]<br>3. Publication of Lavoisier's 'Elementary Treatise on Chemistry' [medium] | 1 | T14-r4 |  |  |
+| 1789 | high | 1. Storming of the Bastille [high]<br>2. Signing of the Judiciary Act of 1789 [medium]<br>3. Antoine Lavoisier Publishes 'Traité Élémentaire de Chimie' [medium] | 1 | T14-r5 |  |  |
+| **1816** | low | 1. The Year Without a Summer [high]<br>2. Argentina Declares Independence [medium]<br>3. Bartholdi's Birth and Frankenstein's Genesis [low] | 1 | T15-r1 |  |  |
+| 1816 | low | 1. The Year Without a Summer [high]<br>2. Argentina Declares Independence [medium]<br>3. Invention of the Draisienne (Laufmaschine) [low] | 1 | T15-r2 |  |  |
+| 1816 | low | 1. Year Without a Summer [high]<br>2. First Practical Bicycle Invented [medium]<br>3. Frankenstein Initiated by Mary Shelley [low] | 1 | T15-r3 |  |  |
+| 1816 | low | 1. The Year Without a Summer [high]<br>2. Argentina Declares Independence [medium]<br>3. Stethoscope Invented by René Laennec [medium] | 1 | T15-r4 |  |  |
+| 1816 | low | 1. The Year Without a Summer [high]<br>2. Argentina Declares Independence [medium]<br>3. Invention of the Draisienne (Velocipede) [low] | 1 | T15-r5 |  |  |
+| **1871** | medium | 1. The Unification of Germany [high]<br>2. The Paris Commune [medium]<br>3. Darwin Publishes 'The Descent of Man' [medium] | 2 | T17-r4 |  |  |
+| 1871 | medium | 1. The Unification of Germany [high]<br>2. The Chicago Fire [medium]<br>3. Darwin's 'The Descent of Man' [medium] | 1 | T17-r1 |  |  |
+| 1871 | medium | 1. The Unification of Germany and the Proclamation of the German Empire [high]<br>2. The Paris Commune [medium]<br>3. Darwin Publishes 'The Descent of Man' [medium] | 1 | T17-r2 |  |  |
+| 1871 | medium | 1. The Unification of Germany [high]<br>2. The Great Chicago Fire [medium]<br>3. Darwin's 'The Descent of Man' [medium] | 1 | T17-r3 |  |  |
+| **1914** | high | 1. Assassination of Archduke Franz Ferdinand [high]<br>2. Opening of the Panama Canal [medium]<br>3. Ford Halves Workday and Doubles Wages [medium] | 1 | T16-r1 |  |  |
+| 1914 | high | 1. Start of World War I [high]<br>2. Opening of the Panama Canal [medium]<br>3. Ford's Five-Dollar Day and Assembly Line Optimization [medium] | 1 | T16-r2 |  |  |
+| 1914 | high | 1. Assassination of Archduke Franz Ferdinand [high]<br>2. Opening of the Panama Canal [medium]<br>3. Founding of the American Society of Composers, Authors and Publishers (ASCAP) [low] | 1 | T16-r3 |  |  |
+| 1914 | high | 1. Assassination of Archduke Franz Ferdinand [high]<br>2. Opening of the Panama Canal [medium]<br>3. Ford Introduces the $5 Workday [medium] | 1 | T16-r4 |  |  |
+| 1914 | high | 1. Assassination of Archduke Franz Ferdinand [high]<br>2. Opening of the Panama Canal [medium]<br>3. First scheduled passenger flight [low] | 1 | T16-r5 |  |  |
+| **1969** | high | 1. Apollo 11 Moon Landing [high]<br>2. Woodstock Music & Art Fair [medium]<br>3. ARPANET Goes Live [medium] | 2 | T18-r1 |  |  |
+| 1969 | high | 1. Apollo 11 Moon Landing [high]<br>2. Woodstock Music & Art Fair [medium]<br>3. ARPANET Goes Online [medium] | 1 | T18-r2 |  |  |
+| 1969 | high | 1. Apollo 11 Moon Landing [high]<br>2. Woodstock Music & Art Fair [medium]<br>3. Inauguration of ARPANET [medium] | 1 | T18-r4 |  |  |
+| 1969 | high | 1. Apollo 11 Moon Landing [high]<br>2. Woodstock Music & Art Fair [medium]<br>3. The Introduction of ARPANET [high] | 1 | T18-r5 |  |  |
+| **1973** | medium | 1. Roe v. Wade Decision [high]<br>2. Yom Kippur War and Oil Embargo [medium]<br>3. Opening of the Sydney Opera House [low] | 1 | T20-r1 |  |  |
+| 1973 | medium | 1. US Withdrawal from Vietnam and End of Draft [high]<br>2. Launch of Skylab [medium]<br>3. Release of 'The Dark Side of the Moon' [medium] | 1 | T20-r2 |  |  |
+| 1973 | medium | 1. Roe v. Wade Decision [high]<br>2. Yom Kippur War and Oil Embargo [medium]<br>3. Introduction of the First Handheld Mobile Phone [medium] | 1 | T20-r3 |  |  |
+| 1973 | medium | 1. US Withdrawal from Vietnam and Fall of Saigon [high]<br>2. Skylab Program Launched [medium]<br>3. First Mobile Phone Call [medium] | 1 | T20-r4 |  |  |
+| 1973 | medium | 1. Roe v. Wade Decision [high]<br>2. First Mobile Phone Call [high]<br>3. Yom Kippur War and Oil Embargo [medium] | 1 | T20-r5 |  |  |
+| **1989** | high | 1. Fall of the Berlin Wall [high]<br>2. Tiananmen Square Protests and Massacre [medium]<br>3. Introduction of the World Wide Web Proposal [medium] | 3 | T19-r3 |  |  |
+| 1989 | high | 1. Fall of the Berlin Wall [high]<br>2. Tiananmen Square Protests and Massacre [medium]<br>3. Launch of the Hubble Space Telescope into Orbit [medium] | 1 | T19-r1 |  |  |
+| 1989 | high | 1. Fall of the Berlin Wall [high]<br>2. Tiananmen Square Protests and Massacre [medium]<br>3. Introduction of the World Wide Web Concept [medium] | 1 | T19-r2 |  |  |
