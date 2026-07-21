@@ -40,6 +40,7 @@
     "test:component": "vitest run --config config/vitest.component.config.ts",
     "redteam:verify": "node redteam/selfcheck.mjs",
     "prepare": "husky",
+    "eval:ci": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/ciChecks.ts",
     "eval:traces": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts",
     "eval:traces:dry": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts --dry-run",
     "eval:judge": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runJudge.ts",
