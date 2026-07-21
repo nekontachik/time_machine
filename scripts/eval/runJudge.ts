@@ -16,14 +16,23 @@
  *   --dry-run       no network: simulate a perfect judge (verdict = gold)
  *   --traces PATH   default scripts/eval/out/traces.jsonl
  *   --labels PATH   default depends on judge
- *   --out PATH      default depends on judge
+ *   --out PATH      md report (default: date-stamped, depends on judge)
+ *   --verdicts PATH per-trace verdicts JSONL (default: next to the md report)
  *   --limit N       first N traces only
+ *   --force         allow overwriting existing report/verdicts files
+ *
+ * Verdicts are persisted TWICE, deliberately (lesson of the Langfuse backfill,
+ * which had to reverse-engineer per-trace verdicts out of the md tables):
+ *   - the .md report is for human eyes (summary, matrix, disagreements);
+ *   - the .jsonl verdicts file is the machine-readable artifact: one record
+ *     per trace (verdict, reason, gold, model) — reusable by any downstream
+ *     tool without reconstruction. Reports are views; JSONL is data.
  *
  * CALIBRATE before trusting: positive class = the FAILURE label. Read
  * precision+recall (not accuracy — the failure class is a minority). Every
  * disagreement is listed so you can inspect where judge and human differ.
  */
-import { mkdirSync, writeFileSync, readFileSync } from "fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from "fs";
 import { dirname } from "path";
 import type { PromptSpec } from "@/lib/ai/prompts";
 import { callOpenRouter } from "./openrouter";
@@ -97,10 +106,57 @@ if (!cfg) {
 
 const TRACES = val("--traces", "scripts/eval/out/traces.jsonl");
 const LABELS = val("--labels", cfg.defaultLabels);
+const FORCE = has("--force");
+const STAMP = new Date().toISOString().slice(0, 10);
+const MODE = SCORE_ONLY ? "score" : "judge";
 const OUT = val(
   "--out",
-  `scripts/eval/out/${JUDGE}-${SCORE_ONLY ? "score" : "judge"}.md`
+  `scripts/eval/out/${DRY ? "dryrun/" : ""}${JUDGE}-${MODE}-${STAMP}.md`
 );
+const VERDICTS = val(
+  "--verdicts",
+  OUT.replace(/\.md$/, "") + "-verdicts.jsonl"
+);
+
+// append-only guard (see header): never silently destroy a previous artifact
+for (const p of [OUT, VERDICTS]) {
+  if (existsSync(p) && !FORCE) {
+    console.error(
+      `refusing to overwrite existing ${p} — artifacts are append-only.\n` +
+        `Use --out/--verdicts for a new path, or --force to overwrite deliberately.`
+    );
+    process.exit(1);
+  }
+}
+
+/** The machine-readable artifact: one JSONL record per judged trace. */
+function writeVerdicts(
+  rows: { t: Trace; g: Gold | "?"; v: string; reason: string }[],
+  isFail: (v: string) => boolean
+): void {
+  mkdirSync(dirname(VERDICTS), { recursive: true });
+  const meta = {
+    judge: JUDGE,
+    mode: MODE,
+    judgeModel: DRY ? "(dry-run)" : judgeModel(),
+    sourceTraces: TRACES,
+    ...(SCORE_ONLY ? {} : { sourceLabels: LABELS }),
+    ts: new Date().toISOString(),
+  };
+  const lines = rows.map((r) =>
+    JSON.stringify({
+      traceId: r.t.traceId,
+      complexity: r.t.dims?.complexity ?? null,
+      verdict: r.v,
+      isFail: isFail(r.v),
+      reason: r.reason,
+      ...(SCORE_ONLY ? {} : { gold: r.g }),
+      ...meta,
+    })
+  );
+  writeFileSync(VERDICTS, lines.join("\n") + "\n");
+  console.log(`verdicts -> ${VERDICTS}`);
+}
 
 // --- load ------------------------------------------------------------------
 function loadTraces(path: string): Trace[] {
@@ -232,6 +288,7 @@ async function main() {
     }
     mkdirSync(dirname(OUT), { recursive: true });
     writeFileSync(OUT, L.join("\n"));
+    writeVerdicts(rows, isFail);
     console.log(`failure: ${failRows.length}/${rows.length}  unknown: ${unk}`);
     for (const [cx, e] of Array.from(byCx)) console.log(`  ${cx}: ${e.fail}/${e.n}`);
     console.log(`\nreport -> ${OUT}`);
@@ -299,6 +356,7 @@ async function main() {
 
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, L.join("\n"));
+  writeVerdicts(rows, isFail);
 
   console.log(`confusion: TP=${TP} FP=${FP} TN=${TN} FN=${FN}  unknown=${unknown}`);
   console.log(`precision=${pct(prec)}  recall=${pct(rec)}  acc=${pct(acc)}  F1=${pct(f1)}`);

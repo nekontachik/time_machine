@@ -43,3 +43,16 @@ export const IMAGE_TIMEOUT_MS = 30_000;
 
 /** Maximum retry attempts for image generation */
 export const IMAGE_MAX_ATTEMPTS = 2;
+
+// ---------------------------------------------------------------------------
+// Scenario request validation (server-side trust boundary)
+// ---------------------------------------------------------------------------
+
+/** Max number of toggled events accepted in a scenario request. */
+export const MAX_EVENTS = 20;
+
+/** Max length of a single event title fed into the scenario prompt.
+ *  Real event titles are short; this caps oversized adversarial payloads
+ *  injected directly via the API. The client toggle UI is not a trust
+ *  boundary — see redteam/VULN_TAXONOMY.md. */
+export const MAX_EVENT_TITLE_LEN = 200;

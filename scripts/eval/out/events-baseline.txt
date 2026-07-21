@@ -1,0 +1,176 @@
+[dotenv@17.3.1] injecting env (8) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+1237 r1 — 3 events:
+  [high] The Mongol Invasion of Kievan Rus'
+  [medium] Establishment of the Hanseatic League's Precursor
+  [low] Canonization of Saint Elizabeth of Hungary
+
+1237 r2 — 3 events:
+  [high] The Siege of Ryazan by the Mongol Horde
+  [medium] The Battle of the Cortenuova
+  [low] The First Mention of the 'Stadtrecht' of Berlin
+
+1237 r3 — 3 events:
+  [high] The Mongol Invasion of Kievan Rus'
+  [medium] The Battle of the Oskol River
+  [low] Death of the Troubadour Daude de Pradas
+
+1237 r4 — 3 events:
+  [high] The Mongol Invasion of Vladimir-Suzdal
+  [medium] The Battle of the Bridge at Cortenuova
+  [low] The Formal Recognition of the Order of the Brothers of the Sword
+
+1237 r5 — 3 events:
+  [high] The Mongol Siege of Ryazan
+  [medium] Creation of the Confederation of the Rhine
+  [low] Death of Jordan of Saxony
+
+1066 r1 — 3 events:
+  [high] Battle of Hastings
+  [medium] Appearance of Halley's Comet
+  [medium] Coronation of William the Conqueror
+
+1066 r2 — 3 events:
+  [high] The Battle of Hastings
+  [medium] Peregrination of Halley's Comet
+  [medium] Coronation of William the Conqueror
+
+1066 r3 — 3 events:
+  [high] The Battle of Hastings
+  [medium] Appearance of Halley's Comet
+  [medium] Coronation of William the Conqueror
+
+1066 r4 — 3 events:
+  [high] The Battle of Hastings
+  [medium] Appearance of Halley's Comet
+  [low] Norwegian Defeat at Stamford Bridge
+
+1066 r5 — 3 events:
+  [high] The Battle of Hastings
+  [medium] Perihelion Passage of Halley’s Comet
+  [medium] Coronation of William the Conqueror
+
+800 r1 — 3 events:
+  [high] Coronation of Charlemagne
+  [medium] Introduction of the Shōen System expansion
+  [medium] Establishment of the House of Wisdom
+
+800 r2 — 3 events:
+  [high] Coronation of Charlemagne
+  [high] Establishment of the House of Wisdom
+  [medium] Norse Raid on Iona
+
+800 r3 — 3 events:
+  [high] Coronation of Charlemagne
+  [medium] Invention of the Viking Longship advancement
+  [low] Completion of the Egil's Saga precursors
+
+800 r4 — 3 events:
+  [high] Coronation of Charlemagne
+  [medium] Completion of the Book of Kells
+  [medium] Establishment of the first hospital in Baghdad
+
+800 r5 — 3 events:
+  [high] Coronation of Charlemagne
+  [medium] The Death of Egfrith of Mercia
+  [medium] Establishment of the House of Wisdom's Precursors
+
+3000 BCE r1 — 3 events:
+  [high] Unification of Upper and Lower Egypt
+  [medium] Establishment of the Urban Center at Caral
+  [low] Standardization of Decimal Counting in Mesopotamia
+
+3000 BCE r2 — 3 events:
+  [high] Unification of Upper and Lower Egypt
+  [medium] Expansion of Proto-Cuneiform Accounting
+  [low] Completion of Stonehenge Phase I
+
+3000 BCE r3 — 3 events:
+  [high] Unification of Upper and Lower Egypt
+  [medium] Standardization of Cuneiform Script
+  [low] Construction of the Sarsen Circle at Stonehenge
+
+3000 BCE r4 — 3 events:
+  [high] Unification of Upper and Lower Egypt
+  [medium] Standardization of Weights and Measures in the Indus Valley
+  [low] Final Construction Phase of Stonehenge
+
+3000 BCE r5 — 3 events:
+  [high] Unification of Upper and Lower Egypt
+  [medium] Development of Proto-Cuneiform Writing
+  [low] Completion of the First Phase of Stonehenge
+
+44 BCE r1 — 3 events:
+  [high] Assassination of Julius Caesar
+  [high] Publication of Cicero's De Officiis
+  [medium] Establishment of the Julian Calendar Reform
+
+44 BCE r2 — 3 events:
+  [high] Assassination of Julius Caesar
+  [medium] Introduction of the Julian Calendar
+  [low] Cicero's Publication of De Officiis
+
+44 BCE r3 — 3 events:
+  [high] The Assassination of Julius Caesar
+  [medium] Introduction of Caesar's reformed calendar
+  [medium] Cicero publishes De Officiis
+
+44 BCE r4 — 3 events:
+  [high] Assassination of Julius Caesar
+  [medium] Introduction of the Julian Calendar
+  [low] Cicero's Composition of 'De Officiis'
+
+44 BCE r5 — 3 events:
+  [high] The Assassination of Julius Caesar
+  [medium] Introduction of the Julian Calendar
+  [low] Appearance of Caesar's Comet
+
+1789 r1 — 3 events:
+  [high] The Storming of the Bastille
+  [high] George Washington Inaugurated as First U.S. President
+  [medium] Antoine Lavoisier Publishes 'Traité Élémentaire de Chimie'
+
+1789 r2 — 3 events:
+  [high] The Storming of the Bastille
+  [high] Inauguration of George Washington
+  [medium] Publication of Lavoisier's Elementary Treatise on Chemistry
+
+1789 r3 — 3 events:
+  [high] The Storming of the Bastille
+  [high] Inauguration of George Washington
+  [medium] William Herschel Discovers Enceladus
+
+1789 r4 — 3 events:
+  [high] The Storming of the Bastille
+  [high] Inauguration of George Washington
+  [medium] Publication of Traité Élémentaire de Chimie
+
+1789 r5 — 3 events:
+  [high] The Storming of the Bastille
+  [medium] The Inauguration of George Washington
+  [medium] Publication of Lavoisier's Chemistry Textbook
+
+1969 r1 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [medium] Woodstock Music & Art Fair
+  [medium] Establishment of ARPANET
+
+1969 r2 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [medium] The Woodstock Music and Art Fair
+  [medium] Creation of ARPANET
+
+1969 r3 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [medium] The Woodstock Music & Art Fair
+  [medium] ARPANET Goes Online
+
+1969 r4 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [medium] The Woodstock Music & Art Fair
+  [high] First ARPANET Message
+
+1969 r5 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [medium] The Woodstock Music & Art Fair
+  [high] ARPANET Goes Live

@@ -6,10 +6,18 @@
  * Flags:
  *   --dry-run        no network, no API key — stub events + synthetic output.
  *                    Use this to validate the pipeline + coverage for free.
+ *                    Writes to scripts/eval/out/dryrun/ — NEVER to live paths.
  *   --runs N         runs per tuple (default 5 -> 20 tuples x 5 = 100 traces).
  *   --limit N        only the first N tuples (smoke test).
  *   --complexity C   only tuples of complexity C (none|peripheral|central|compound).
- *   --out PATH       output JSONL (default scripts/eval/out/traces.jsonl).
+ *   --out PATH       output JSONL (default: date-stamped, see below).
+ *   --force          allow overwriting an existing output file.
+ *
+ * Run artifacts are APPEND-ONLY (lesson of the 2026-07-10 incident, when a
+ * dry-run rerun silently overwrote the labelled calibration traces):
+ *   - default output is date-stamped:  out/traces-YYYY-MM-DD.jsonl
+ *   - dry-run goes to a separate dir:  out/dryrun/traces-YYYY-MM-DD-dry.jsonl
+ *   - refuses to overwrite an existing file unless --force is passed.
  *
  * Pipeline per run (faithful to the product):
  *   real events  = generateEventTitles(year, lang)        [prompts.ts + parse]
@@ -21,7 +29,7 @@
  * same model/prompt/max_tokens non-streamed to capture the full text + usage.
  * Same content, simpler capture.
  */
-import { mkdirSync, writeFileSync, appendFileSync } from "fs";
+import { mkdirSync, writeFileSync, appendFileSync, existsSync } from "fs";
 import { dirname } from "path";
 import type { HistoricalEvent, Lang } from "@/types";
 import {
@@ -48,10 +56,24 @@ const val = (f: string, d: string) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : d;
 };
 const DRY = has("--dry-run");
+const FORCE = has("--force");
 const RUNS = parseInt(val("--runs", "5"), 10);
 const LIMIT = parseInt(val("--limit", String(TUPLES.length)), 10);
-const OUT = val("--out", "scripts/eval/out/traces.jsonl");
+const STAMP = new Date().toISOString().slice(0, 10);
+const DEFAULT_OUT = DRY
+  ? `scripts/eval/out/dryrun/traces-${STAMP}-dry.jsonl`
+  : `scripts/eval/out/traces-${STAMP}.jsonl`;
+const OUT = val("--out", DEFAULT_OUT);
 const COMPLEXITY = val("--complexity", ""); // none|peripheral|central|compound; "" = all
+
+// append-only guard: a run must never silently destroy a previous artifact
+if (existsSync(OUT) && !FORCE) {
+  console.error(
+    `refusing to overwrite existing ${OUT} — run artifacts are append-only.\n` +
+      `Use --out for a new path, or --force to overwrite deliberately.`
+  );
+  process.exit(1);
+}
 
 // --- dry-run stubs ---------------------------------------------------------
 function stubEvents(year: number): HistoricalEvent[] {

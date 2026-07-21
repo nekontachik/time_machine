@@ -1,0 +1,155 @@
+[dotenv@17.3.1] injecting env (8) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+
+1237 r1 — 1 events:
+  [high] The Mongol Siege of Ryazan
+
+1237 r2 — 2 events:
+  [high] The Mongol Invasion of Kievan Rus'
+  [medium] Consolidation of the Teutonic Order and the Swordbearers
+
+1237 r3 — 2 events:
+  [high] The Siege of Ryazan by the Mongol Golden Horde
+  [medium] Formation of the Livonian Order
+
+1237 r4 — 2 events:
+  [high] The Mongol Invasion of Vladimir-Suzdal
+  [high] Unification of the Livonian and Teutonic Orders
+
+1237 r5 — 3 events:
+  [high] The Mongol Invasion of Kievan Rus'
+  [high] Battle of Cortenuova
+  [medium] Treaty of York
+
+1066 r1 — 3 events:
+  [high] The Battle of Hastings
+  [high] The Battle of Stamford Bridge
+  [medium] Appearance of Halley's Comet
+
+1066 r2 — 3 events:
+  [high] The Battle of Hastings
+  [medium] Appearance of Halley's Comet
+  [medium] The Battle of Stamford Bridge
+
+1066 r3 — 3 events:
+  [high] Battle of Hastings
+  [high] Battle of Stamford Bridge
+  [medium] Appearance of Halley's Comet
+
+1066 r4 — 3 events:
+  [high] The Battle of Hastings
+  [high] The Battle of Stamford Bridge
+  [medium] Appearance of Halley's Comet
+
+1066 r5 — 3 events:
+  [high] The Battle of Hastings
+  [high] The Battle of Stamford Bridge
+  [medium] The First Observed Appearance of Halley's Comet
+
+800 r1 — 1 events:
+  [high] Coronation of Charlemagne as Emperor
+
+800 r2 — 2 events:
+  [high] Coronation of Charlemagne as Emperor
+  [medium] Establishment of the Aghlabid Dynasty in Ifriqiya
+
+800 r3 — 2 events:
+  [high] Coronation of Charlemagne as Emperor
+  [high] Death of Al-Khwarizmi's Predecessor and Rise of the House of Wisdom
+
+800 r4 — 2 events:
+  [high] Coronation of Charlemagne
+  [medium] Establishment of the Abbasid-Carolingian Alliance
+
+800 r5 — 2 events:
+  [high] Coronation of Charlemagne as Emperor
+  [medium] Death of Li Fuyan and the Tang Dynasty succession
+
+3000 BCE r1 — 2 events:
+  [high] Unification of Upper and Lower Egypt (Early Dynastic Period)
+  [high] Founding of the city of Memphis
+
+3000 BCE r2 — 2 events:
+  [high] Unification of Upper and Lower Egypt
+  [high] Development of Proto-Cuneiform in Sumer
+
+3000 BCE r3 — 2 events:
+  [high] Unification of Upper and Lower Egypt (Predynastic Period Transition)
+  [high] Expansion of Proto-Writing in Sumer
+
+3000 BCE r4 — 2 events:
+  [high] Unification of Upper and Lower Egypt under the First Dynasty
+  [medium] Expansion of the Proto-Indo-European Culture
+
+3000 BCE r5 — 2 events:
+  [high] Unification of Upper and Lower Egypt under the First Dynasty
+  [high] Transition to the Early Bronze Age in the Aegean
+
+44 BCE r1 — 2 events:
+  [high] The Assassination of Julius Caesar
+  [high] Appointment of Caesar as Dictator Perpetuo
+
+44 BCE r2 — 2 events:
+  [high] Assassination of Julius Caesar
+  [high] Appointment of Caesar as Dictator Perpetuo
+
+44 BCE r3 — 2 events:
+  [high] The Assassination of Julius Caesar
+  [medium] Cleopatra VII Elevates Caesarion as Co-ruler
+
+44 BCE r4 — 2 events:
+  [high] Assassination of Julius Caesar
+  [medium] Appointment of Mark Antony as Consul
+
+44 BCE r5 — 2 events:
+  [high] Assassination of Julius Caesar
+  [medium] Death of Burebista
+
+1789 r1 — 3 events:
+  [high] The French Revolution Begins
+  [high] Inauguration of George Washington
+  [high] Publication of Lavoisier's 'Elementary Treatise on Chemistry'
+
+1789 r2 — 3 events:
+  [high] The Storming of the Bastille
+  [high] Inauguration of George Washington
+  [medium] Publication of Lavoisier's Traité Élémentaire de Chimie
+
+1789 r3 — 3 events:
+  [high] The French Revolution Begins
+  [high] Inauguration of George Washington
+  [high] Publication of Lavoisier's 'Elementary Treatise on Chemistry'
+
+1789 r4 — 3 events:
+  [high] The Storming of the Bastille
+  [high] Inauguration of George Washington
+  [high] Publication of Antoine Lavoisier's 'Traité Élémentaire de Chimie'
+
+1789 r5 — 3 events:
+  [high] The French Revolution: Storming of the Bastille
+  [high] Inauguration of the First U.S. President
+  [medium] Publication of Lavoisier’s Traité Élémentaire de Chimie
+
+1969 r1 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [medium] The Woodstock Music & Art Fair
+  [high] ARPANET Goes Online
+
+1969 r2 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [high] Woodstock Music & Art Fair
+  [high] ARPANET Goes Live
+
+1969 r3 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [high] Establishment of ARPANET
+  [medium] The Woodstock Music & Art Fair
+
+1969 r4 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [high] ARPANET Goes Online
+  [medium] Woodstock Music & Art Fair
+
+1969 r5 — 3 events:
+  [high] Apollo 11 Moon Landing
+  [high] Arpanet Goes Online
+  [medium] Woodstock Music & Art Fair

@@ -57,5 +57,8 @@ medium-post.md
 next-env.d.ts
 .claude/settings.local.json
 
-# Eval harness output
-scripts/eval/out/
+# Eval harness output: validated run artifacts (traces, verdicts, reports) ARE
+# tracked — they are reference data that calibration depends on (see the
+# 2026-07-10 overwrite incident in scripts/eval/langfuse/README.md).
+# Only throwaway dry-run output stays ignored:
+scripts/eval/out/dryrun/

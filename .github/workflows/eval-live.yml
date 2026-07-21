@@ -1,0 +1,64 @@
+# Eval tier 2 — live LLM-judge run. MANUAL trigger only (costs real money).
+#
+# Requires repo secret OPENROUTER_API_KEY (Settings → Secrets → Actions).
+# Judges an existing committed traces file (score-only, no generation) and
+# publishes the md report + per-trace verdicts JSONL as workflow artifacts.
+#
+# Typical use: after a prompt/model change, re-run traces locally, commit the
+# new dated JSONL, then dispatch this workflow against it and compare the
+# failure rate with the baseline (product_100: 2/100 fail).
+name: Eval (live judge)
+
+on:
+  workflow_dispatch:
+    inputs:
+      traces:
+        description: "Traces JSONL to judge (committed path)"
+        default: "scripts/eval/out/product_100.jsonl"
+        required: true
+      judge:
+        description: "Judge: payoff | recap"
+        default: "payoff"
+        required: true
+      limit:
+        description: "Judge only first N traces (0 = all)"
+        default: "0"
+        required: false
+
+jobs:
+  judge-score:
+    name: "⚖️ Judge (live, score-only)"
+    runs-on: ubuntu-latest
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run judge (score-only)
+        run: |
+          npm run eval:judge:score -- \
+            --judge "${{ inputs.judge }}" \
+            --traces "${{ inputs.traces }}" \
+            --limit "${{ inputs.limit }}" \
+            --out eval-live/report.md \
+            --verdicts eval-live/verdicts.jsonl
+
+      - name: Publish report to job summary
+        if: always()
+        run: cat eval-live/report.md >> "$GITHUB_STEP_SUMMARY" || echo "no report produced" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report + verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-judge-${{ inputs.judge }}-${{ github.run_number }}
+          path: eval-live/
+          retention-days: 90
