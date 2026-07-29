@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import ScenarioStream from "@/components/features/ScenarioStream/ScenarioStream";
 // import ShareCard from "@/components/ShareCard/ShareCard";
 import type { ScenarioRequest, Lang } from "@/types";
+import { LangSchema } from "@/lib/validators";
+import { safeOgImage, safeTitleFragment } from "@/lib/og";
 import { formatYear } from "@/lib/formatYear";
 
 interface Props {
@@ -17,13 +19,11 @@ interface Props {
   };
 }
 
-const OG_DEFAULT_IMAGE = "/og-default.jpg";
-
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const year = parseInt(searchParams.year ?? "", 10);
-  const lang = searchParams.lang ?? "ua";
-  const imageUrl = searchParams.imageUrl ?? null;
-  const eventTitle = searchParams.eventTitle ?? null;
+  const langParsed = LangSchema.safeParse(searchParams.lang ?? "ua");
+  const lang: Lang = langParsed.success ? langParsed.data : "ua";
+  const eventTitle = safeTitleFragment(searchParams.eventTitle);
   const isEn = lang === "en";
 
   const displayYear = !isNaN(year) ? String(year) : "";
@@ -47,8 +47,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     ? `Discover what the world could have been like in ${displayYear}. An AI-generated alternative history scenario.`
     : `Дізнайтесь, яким міг бути світ у ${displayYear}. Альтернативна історія, згенерована ШІ.`;
 
-  // OG image: use the generated image when available; fall back to default.
-  const ogImageUrl = imageUrl ?? OG_DEFAULT_IMAGE;
+  // OG image: use the generated image when it is on the allowlist, else default.
+  const ogImageUrl = safeOgImage(searchParams.imageUrl);
   const ogImages = [{ url: ogImageUrl, width: 1200, height: 630 }];
 
   return {
@@ -71,7 +71,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default function ScenarioPage({ searchParams }: Props) {
   const year = parseInt(searchParams.year ?? "", 10);
-  const lang = (searchParams.lang ?? "ua") as Lang;
+  const langParsed = LangSchema.safeParse(searchParams.lang ?? "ua");
+  const lang: Lang = langParsed.success ? langParsed.data : "ua";
   const isEn = lang === "en";
 
   let request: ScenarioRequest | undefined;
