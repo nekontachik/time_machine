@@ -35,7 +35,7 @@ export const DEFAULT_RATE_LIMIT = 10;
 export const BUCKET_LIMITS = {
   scenario: 10,
   events: 30,
-  image: 5,
+  image: 10,
 } as const;
 
 export type BucketName = keyof typeof BUCKET_LIMITS;
