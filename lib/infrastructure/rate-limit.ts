@@ -52,10 +52,30 @@ const ATOMIC_INCR_EXPIRE_LUA = `
   return current
 `;
 
+/**
+ * Resolve the client IP used as the rate-limit key.
+ *
+ * Order matters. The leftmost value of `x-forwarded-for` is whatever the
+ * CLIENT sent — on any deployment that is not behind a normalising proxy,
+ * rotating that header defeats the rate limit entirely. So we prefer, in
+ * order:
+ *   1. x-vercel-forwarded-for — written by the Vercel edge, not spoofable
+ *   2. req.ip                 — Next.js' own resolved value
+ *   3. x-forwarded-for[0]     — last resort, attacker-influenced
+ *
+ * The final fallback buckets by minute rather than a single constant, so a
+ * deployment with no IP information degrades to a global 1-minute window
+ * instead of locking every visitor out for the rest of the day.
+ */
 export function getClientIp(req: NextRequest): string {
+  const vercel = req.headers
+    .get("x-vercel-forwarded-for")
+    ?.split(",")[0]
+    ?.trim();
+  if (vercel) return vercel;
+  if (req.ip) return req.ip;
   const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   if (fwd) return fwd;
-  if (req.ip) return req.ip;
   return `unknown_${Math.floor(Date.now() / 60000)}`;
 }
 
@@ -66,6 +86,10 @@ export function getClientIp(req: NextRequest): string {
 export function getClientIpFromHeaders(headers: {
   get(name: string): string | null;
 }): string {
+  // Same precedence as getClientIp — see the note there on why the
+  // Vercel-written header wins over client-supplied x-forwarded-for.
+  const vercel = headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
+  if (vercel) return vercel;
   const fwd = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   if (fwd) return fwd;
   return `unknown_${Math.floor(Date.now() / 60000)}`;
