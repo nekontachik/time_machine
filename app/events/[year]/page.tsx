@@ -9,7 +9,8 @@ import {
   getClientIpFromHeaders,
 } from "@/lib/infrastructure/rate-limit";
 import { MOCK_EVENTS } from "@/lib/mocks/events";
-import type { HistoricalEvent } from "@/types";
+import { LangSchema } from "@/lib/validators";
+import type { HistoricalEvent, Lang } from "@/types";
 import { formatYear } from "@/lib/formatYear";
 
 interface Props {
@@ -25,7 +26,18 @@ function checkE2EMock(searchParams: { e2e_mock?: string }): boolean {
 
 export default async function EventsPage({ params, searchParams }: Props) {
   const year = parseInt(params.year, 10);
-  const lang = searchParams.lang ?? "en";
+
+  // `lang` is attacker-controlled and reaches TWO sensitive sinks: the Redis
+  // cache key (lib/infrastructure/cache.ts) and the LLM prompt
+  // (lib/ai/prompts.ts). Left free-form it allows (a) unbounded cache-key
+  // cardinality — every unique value is a guaranteed cache miss that costs a
+  // paid OpenRouter + Tavily round-trip and leaves a 24h Redis key — and
+  // (b) prompt injection via ?lang=en.%20Ignore%20all%20previous%20instructions.
+  // /api/historical-events already enum-validates this; the SSR page is the
+  // same pipeline and needs the same guard. Fall back to the default rather
+  // than 404 so an unknown locale still renders.
+  const langParsed = LangSchema.safeParse(searchParams.lang ?? "en");
+  const lang: Lang = langParsed.success ? langParsed.data : "en";
 
   if (isNaN(year) || year < -3000 || year > 2024) {
     notFound();
