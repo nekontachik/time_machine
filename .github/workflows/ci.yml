@@ -194,7 +194,7 @@ jobs:
         run: npm run eval:traces:dry -- --limit 2 --runs 1
 
       - name: Judge pipeline smoke (dry-run, no network)
-        run: npm run eval:judge:dry -- --limit 5
+        run: npm run eval:judge:dry -- --limit 20
 
   # ── 7. Pipeline summary ──────────────────────────────────────────────────
   summary:

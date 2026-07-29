@@ -14,7 +14,8 @@
  *   --judge NAME    payoff (default) | recap
  *   --score-only    judge new traces, no gold (measure a fix; reports failure rate)
  *   --dry-run       no network: simulate a perfect judge (verdict = gold)
- *   --traces PATH   default scripts/eval/out/traces.jsonl
+ *   --traces PATH   default scripts/eval/out/product_100.jsonl
+ *                   (out/traces.jsonl is stub data — see loadTraces)
  *   --labels PATH   default depends on judge
  *   --out PATH      md report (default: date-stamped, depends on judge)
  *   --verdicts PATH per-trace verdicts JSONL (default: next to the md report)
@@ -74,6 +75,19 @@ type JudgeCfg = {
   defaultLabels: string;
   /** human note → failure? */
   goldFail: RegExp;
+  /**
+   * human note → explicitly GOOD?
+   *
+   * Set it when the labelling file has a CONTROLLED VOCABULARY (payoff-review.md
+   * instructs the annotator to write exactly `same` or `diff`). Then a note that
+   * matches neither vocabulary is a labelling defect and must abort the run,
+   * instead of silently becoming "good".
+   *
+   * Leave it null for FREE-TEXT open coding (open-coding.md holds prose notes
+   * like "wrong year" / "Over-attribution"), where "does not say recap" really
+   * does mean "not a recap". Placeholders are still rejected — see PLACEHOLDER.
+   */
+  goldGood: RegExp | null;
   prompt: (t: Trace) => PromptSpec;
   parse: (text: string) => { verdict: string; reason: string };
 };
@@ -85,6 +99,7 @@ const CFG: Record<string, JudgeCfg> = {
     failName: "same-world (weak payoff)",
     defaultLabels: "evals1/payoff-review.md",
     goldFail: /\bsame\b|схож|convergent|recap|переказ/i,
+    goldGood: /\bdiff\b|different|інш/i,
     prompt: (t) => payoffJudgePrompt({ year: t.year, present: presentDayBeat(t.output) }),
     parse: parsePayoffVerdict,
   },
@@ -94,6 +109,7 @@ const CFG: Record<string, JudgeCfg> = {
     failName: "recap",
     defaultLabels: "evals1/open-coding.md",
     goldFail: /recap|переказ|пересказ/i,
+    goldGood: null, // free-text open coding
     prompt: (t) => recapJudgePrompt({ year: t.year, changes: t.changes, scenario: t.output }),
     parse: parseVerdict,
   },
@@ -105,7 +121,10 @@ if (!cfg) {
   process.exit(1);
 }
 
-const TRACES = val("--traces", "scripts/eval/out/traces.jsonl");
+// NOT out/traces.jsonl: that file is committed in its post-incident dry-run stub
+// state (2026-07-10, see scripts/eval/langfuse/README.md) and is kept only for
+// provenance. product_100.jsonl is the reproducible real run.
+const TRACES = val("--traces", "scripts/eval/out/product_100.jsonl");
 const LABELS = val("--labels", cfg.defaultLabels);
 const FORCE = has("--force");
 const STAMP = new Date().toISOString().slice(0, 10);
@@ -161,25 +180,90 @@ function writeVerdicts(
 
 // --- load ------------------------------------------------------------------
 function loadTraces(path: string): Trace[] {
-  return readFileSync(path, "utf-8")
+  const rows = readFileSync(path, "utf-8")
     .split("\n")
     .filter((l) => l.trim())
     .map((l) => JSON.parse(l) as Trace);
+  assertNotStubs(rows, path);
+  return rows;
 }
 
-/** Golden labels from a hand-annotated review .md: "fail" if the human Note
- *  matches the judge's goldFail regex, else "good". */
+/**
+ * A dry-run rerun once overwrote the labelled calibration traces with stubs
+ * (2026-07-10; see scripts/eval/langfuse/README.md). The stub file is still
+ * committed at out/traces.jsonl for provenance, and it is still the default
+ * --traces value, so judging placeholder prose is one careless command away.
+ * Refuse it loudly rather than reporting metrics computed on "[DRY-RUN …]".
+ */
+function assertNotStubs(rows: Trace[], path: string): void {
+  const stubs = rows.filter(
+    (r) =>
+      (r as unknown as { dryRun?: boolean }).dryRun === true ||
+      String(r.output ?? "").includes("[DRY-RUN")
+  );
+  if (!stubs.length) return;
+  throw new Error(
+    `${path}: ${stubs.length}/${rows.length} traces are dry-run stubs ` +
+      `(e.g. ${stubs[0].traceId}) — any metric computed from them is meaningless.\n` +
+      `Pass --traces with a real run (out/product_100.jsonl, out/none_fixed.jsonl, ` +
+      `out/traces-v2.jsonl, out/traces-master.jsonl).`
+  );
+}
+
+/**
+ * Placeholder / non-answer notes. These are NOT labels. Treating one as a label
+ * is exactly what silently turned two unlabelled traces into "good" (the `---`
+ * filler; see evals1/pending-labels-review.md), which would have hidden a false
+ * negative and quietly inflated recall.
+ */
+const PLACEHOLDER = /^(?:[\s\-–—_.*]+|todo|tbd|n\/?a|\?+|pending|unclear|wip|xxx)$/i;
+
+/**
+ * Golden labels from a hand-annotated review .md.
+ *
+ * Every note must resolve to a decision. A note that is a placeholder, or that
+ * matches neither vocabulary of a controlled-vocabulary file, aborts the run
+ * with the offending traceIds — it never defaults to "good". Genuinely EMPTY
+ * notes are still skipped (they become "?" and are excluded from the confusion
+ * matrix), because "not annotated yet" is a real state; "annotated with junk"
+ * is not.
+ */
 function loadGold(path: string): Map<string, Gold> {
   const txt = readFileSync(path, "utf-8");
   const blocks = txt.split(/\n### (T\d+-r\d+)/);
   const m = new Map<string, Gold>();
+  const problems: string[] = [];
   for (let i = 1; i < blocks.length; i += 2) {
     const id = blocks[i].trim();
     const note = (
       blocks[i + 1].match(/\*\*(?:Note|Твоя нотатка):\*\*\s*(.*)/)?.[1] ?? ""
-    ).toLowerCase();
-    if (!note.trim()) continue; // unlabelled → skip (becomes "?")
-    m.set(id, cfg.goldFail.test(note) ? "fail" : "good");
+    )
+      .trim()
+      .toLowerCase();
+    if (!note) continue; // genuinely unlabelled → skip (becomes "?")
+
+    if (PLACEHOLDER.test(note)) {
+      problems.push(`${id}: placeholder note ${JSON.stringify(note)} — not a label`);
+      continue;
+    }
+    const isFailNote = cfg.goldFail.test(note);
+    if (!isFailNote && cfg.goldGood && !cfg.goldGood.test(note)) {
+      problems.push(
+        `${id}: note ${JSON.stringify(note)} matches neither the fail nor the good vocabulary`
+      );
+      continue;
+    }
+    if (m.has(id)) {
+      problems.push(`${id}: duplicate card — a second label would silently overwrite the first`);
+      continue;
+    }
+    m.set(id, isFailNote ? "fail" : "good");
+  }
+  if (problems.length) {
+    throw new Error(
+      `${path}: ${problems.length} unusable gold label(s) — refusing to guess.\n  ` +
+        problems.join("\n  ")
+    );
   }
   return m;
 }
