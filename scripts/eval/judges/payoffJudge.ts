@@ -19,14 +19,13 @@
  * paragraph) — so the calibration is apples-to-apples.
  *
  * Labels: "same_world" = the failure (present ≈ ours), "different_world" = good.
+ *
+ * Model: selection + the cross-family self-preference-bias guardrail live in
+ * ./judgeModel — see that file for why a same-family judge is refused by default.
  */
 import type { PromptSpec } from "@/lib/ai/prompts";
 import { yearLabel } from "@/lib/ai/prompts";
-import { SCENARIO_MODEL } from "@/constants";
-
-export function judgeModel(): string {
-  return process.env.JUDGE_MODEL || SCENARIO_MODEL;
-}
+import { judgeModel } from "./judgeModel";
 
 export type PayoffVerdict = "same_world" | "different_world" | "unknown";
 

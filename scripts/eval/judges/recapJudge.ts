@@ -18,19 +18,12 @@
  * obscure years) is exactly what calibration on the golden set MEASURES — see
  * runJudge.ts. Do not trust this judge until calibration agreement is high.
  *
- * Model: defaults to SCENARIO_MODEL but overridable via JUDGE_MODEL. Tip: set
- * JUDGE_MODEL to a DIFFERENT family than the generator (claude-sonnet-4.6) to
- * avoid a model favouring its own outputs (self-preference bias).
+ * Model: selection + the cross-family self-preference-bias guardrail live in
+ * ./judgeModel — see that file for why a same-family judge is refused by default.
  */
 import type { PromptSpec } from "@/lib/ai/prompts";
 import { yearLabel } from "@/lib/ai/prompts";
-import { SCENARIO_MODEL } from "@/constants";
-
-/** Read lazily (at call time) so JUDGE_MODEL works whether set inline on the
- *  command line OR loaded from .env.local by dotenv before the first call. */
-export function judgeModel(): string {
-  return process.env.JUDGE_MODEL || SCENARIO_MODEL;
-}
+import { judgeModel } from "./judgeModel";
 
 export type Verdict = "recap" | "counterfactual" | "unknown";
 
