@@ -36,8 +36,9 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync } from "fs";
 import { dirname } from "path";
 import type { PromptSpec } from "@/lib/ai/prompts";
 import { callOpenRouter } from "./openrouter";
-import { recapJudgePrompt, parseVerdict, judgeModel } from "./judges/recapJudge";
+import { recapJudgePrompt, parseVerdict } from "./judges/recapJudge";
 import { payoffJudgePrompt, parsePayoffVerdict, presentDayBeat } from "./judges/payoffJudge";
+import { judgeModel } from "./judges/judgeModel";
 
 // --- flags -----------------------------------------------------------------
 const argv = process.argv.slice(2);
