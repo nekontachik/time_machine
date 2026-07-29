@@ -19,7 +19,17 @@ interface Props {
 }
 
 function checkE2EMock(searchParams: { e2e_mock?: string }): boolean {
+  // Explicit opt-in via env stays honoured everywhere — Playwright runs
+  // against a real server and needs it (config/playwright.config.ts sets
+  // E2E_MOCK_EVENTS=true).
   if (process.env.E2E_MOCK_EVENTS === "true") return true;
+
+  // The URL/cookie bypass is dev-only. In production it let anyone send a
+  // victim /events/1969?e2e_mock=1 and have the app serve hardcoded fixture
+  // events as real history for an hour — a content-integrity hole in a
+  // product whose entire value proposition is historical accuracy.
+  if (process.env.NODE_ENV === "production") return false;
+
   if (searchParams.e2e_mock === "1") return true;
   return cookies().get("e2e_mock_events")?.value === "1";
 }
