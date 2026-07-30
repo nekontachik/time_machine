@@ -2,7 +2,7 @@
   "name": "time-machine",
   "version": "0.2.0",
   "private": true,
-  "description": "AI-powered alternative history PWA \u2014 explore what-if scenarios for any year from 3000 BCE to 2024 CE",
+  "description": "AI-powered alternative history PWA — explore what-if scenarios for any year from 3000 BCE to 2024 CE",
   "author": "nekontachik",
   "repository": {
     "type": "git",
@@ -41,6 +41,7 @@
     "redteam:verify": "node redteam/selfcheck.mjs",
     "prepare": "husky",
     "eval:ci": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/ciChecks.ts",
+    "eval:parity": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/_parity.ts",
     "eval:traces": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts",
     "eval:traces:dry": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runTraces.ts --dry-run",
     "eval:judge": "tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/runJudge.ts",
