@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateScenarioImage } from "@/lib/ai/image";
-import type { ImageRequest, ImageResponse } from "@/types";
+import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
+import { parseJsonBody, ImageRequestSchema } from "@/lib/validators";
+import type { ImageResponse } from "@/types";
 
 export async function POST(req: NextRequest) {
-  let body: ImageRequest;
-  try {
-    body = (await req.json()) as ImageRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const { scenarioSummary, year, style } = body;
-
-  if (!scenarioSummary || !year) {
+  const ip = getClientIp(req);
+  const { allowed, limit } = await checkBucketLimit(ip, "image");
+  if (!allowed) {
     return NextResponse.json(
-      { error: "scenarioSummary and year are required" },
-      { status: 400 }
+      { error: "Daily limit reached", limit },
+      { status: 429 }
     );
   }
+
+  const result = await parseJsonBody(req, ImageRequestSchema);
+  if (!result.ok) {
+    return NextResponse.json(result.body, { status: result.status });
+  }
+  const { scenarioSummary, year, style } = result.data;
 
   try {
     const result = await generateScenarioImage(scenarioSummary, year, style);

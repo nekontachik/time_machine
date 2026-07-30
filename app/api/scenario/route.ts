@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamScenario } from "@/lib/ai/text";
-import { buildChangesString, validateScenarioEvents } from "@/lib/ai/changes";
-import { checkRateLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
-import { MIN_YEAR, MAX_YEAR } from "@/constants";
-import type { ScenarioRequest } from "@/types";
+import { buildChangesString } from "@/lib/ai/changes";
+import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
+import { parseJsonBody, ScenarioRequestSchema } from "@/lib/validators";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const { allowed, remaining } = await checkRateLimit(ip);
+  const { allowed, remaining, limit } = await checkBucketLimit(ip, "scenario");
 
   if (!allowed) {
     return NextResponse.json(
-      { error: "Daily limit reached", limit: 3 },
+      { error: "Daily limit reached", limit },
       {
         status: 429,
         headers: { "X-RateLimit-Remaining": "0" },
@@ -19,36 +18,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: ScenarioRequest;
-  try {
-    body = (await req.json()) as ScenarioRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  // Server-side trust boundary: the client toggle UI is NOT a trust boundary,
+  // so the whole body is schema-validated before any of it reaches the model
+  // prompt (see redteam/VULN_TAXONOMY.md). ScenarioRequestSchema supersedes
+  // the older validateScenarioEvents() check — it enforces the same event
+  // contract plus .strict() on every object and a cap on `premium`.
+  const result = await parseJsonBody(req, ScenarioRequestSchema);
+  if (!result.ok) {
+    return NextResponse.json(result.body, { status: result.status });
   }
+  const { year, events, lang, premium } = result.data;
 
-  const { year, events, lang, premium } = body;
-
-  if (year === undefined || year === null || !events || !lang) {
-    return NextResponse.json(
-      { error: "year, events, and lang are required" },
-      { status: 400 }
-    );
-  }
-
-  if (!Number.isInteger(year) || year < MIN_YEAR || year > MAX_YEAR) {
-    return NextResponse.json(
-      { error: `year out of range (${MIN_YEAR}–${MAX_YEAR})` },
-      { status: 400 }
-    );
-  }
-
-  // Server-side trust boundary: validate the events contract before any of it
-  // reaches the model prompt (see redteam/VULN_TAXONOMY.md).
-  const eventsError = validateScenarioEvents(events);
-  if (eventsError) {
-    return NextResponse.json({ error: eventsError }, { status: 400 });
-  }
-
+  // Shared with the eval harness so the traces it produces use byte-identical
+  // prompts. Returns NO_CHANGES_SENTINEL when nothing was toggled off, which
+  // scenarioPrompt detects to avoid the none-recap failure mode.
   const changes = buildChangesString(events);
 
   try {

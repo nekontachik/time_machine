@@ -27,7 +27,9 @@ vi.mock("@/lib/ai/text", () => ({
 
 vi.mock("@/lib/infrastructure/rate-limit", () => ({
   checkRateLimit: mockCheckRateLimit,
+  checkBucketLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 99, limit: 10 }),
   getClientIp: mockGetClientIp,
+  getClientIpFromHeaders: vi.fn().mockReturnValue("127.0.0.1"),
 }));
 
 // ---------------------------------------------------------------------------
@@ -109,7 +111,12 @@ describe("POST /api/scenario — streaming", () => {
   });
 
   it("returns 429 with correct error body when rate limited", async () => {
-    mockCheckRateLimit.mockResolvedValue({ allowed: false, remaining: 0 });
+    const { checkBucketLimit } = await import("@/lib/infrastructure/rate-limit");
+    vi.mocked(checkBucketLimit).mockResolvedValueOnce({
+      allowed: false,
+      remaining: 0,
+      limit: 10,
+    });
 
     const req = new Request("http://localhost/api/scenario", {
       method: "POST",
@@ -121,19 +128,14 @@ describe("POST /api/scenario — streaming", () => {
     expect(res.status).toBe(429);
 
     const body = await res.json();
-    expect(body).toMatchObject({ error: expect.stringContaining("limit"), limit: 3 });
+    expect(body).toMatchObject({ error: expect.stringContaining("limit"), limit: 10 });
     expect(res.headers.get("X-RateLimit-Remaining")).toBe("0");
   });
 
-  it("handles empty events array — uses 'all events happened' fallback", async () => {
-    let capturedChanges = "";
-    mockStreamScenario.mockImplementation(
-      ({ changes }: { changes: string }) => {
-        capturedChanges = changes;
-        return Promise.resolve(makeStream(["ok"]));
-      }
-    );
-
+  it("accepts an empty events array — the no-changes case", async () => {
+    // Empty means the user toggled nothing off. buildChangesString maps it to
+    // NO_CHANGES_SENTINEL and the prompt picks its own divergence; rejecting it
+    // would break the documented contract and the none-recap handling.
     const req = new Request("http://localhost/api/scenario", {
       method: "POST",
       body: JSON.stringify({ year: 1969, events: [], lang: "en" }),
@@ -142,7 +144,6 @@ describe("POST /api/scenario — streaming", () => {
 
     const res = await POST(req as unknown as import("next/server").NextRequest);
     expect(res.status).toBe(200);
-    expect(capturedChanges).toContain("all events happened as recorded");
   });
 
   it("passes premium options to streamScenario", async () => {

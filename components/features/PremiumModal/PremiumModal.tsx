@@ -44,7 +44,6 @@ export default function PremiumModal({ open, onClose, onConfirm }: Props) {
           <ul className="mt-2 space-y-1 text-sm text-gray-400">
             <li>• Unlimited requests</li>
             <li>• Local impact (city + country)</li>
-            <li>• AI video (coming soon)</li>
           </ul>
         </div>
 

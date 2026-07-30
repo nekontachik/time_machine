@@ -29,21 +29,26 @@ export default function EventsClient({ events, year, lang }: Props) {
 
   // Step machine: year-reveal → events-reveal → choice
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const revealTimer = setTimeout(() => {
       setStep("events-reveal");
 
       // Stagger each card in
       events.forEach((_, i) => {
-        setTimeout(() => {
+        const t = setTimeout(() => {
           setVisibleCount(i + 1);
           if (i === events.length - 1) {
             setStep("choice");
           }
         }, i * CARD_STAGGER_MS);
+        timeouts.push(t);
       });
     }, YEAR_REVEAL_MS);
 
-    return () => clearTimeout(revealTimer);
+    return () => {
+      clearTimeout(revealTimer);
+      timeouts.forEach(clearTimeout);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

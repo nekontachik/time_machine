@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import ScenarioStream from "@/components/features/ScenarioStream/ScenarioStream";
 // import ShareCard from "@/components/ShareCard/ShareCard";
 import type { ScenarioRequest, Lang } from "@/types";
+import { safeOgImage, safeTitleFragment } from "@/lib/og";
 import { formatYear } from "@/lib/formatYear";
 
 interface Props {
@@ -17,12 +18,9 @@ interface Props {
   };
 }
 
-const OG_DEFAULT_IMAGE = "/og-default.jpg";
-
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const year = parseInt(searchParams.year ?? "", 10);
-  const imageUrl = searchParams.imageUrl ?? null;
-  const eventTitle = searchParams.eventTitle ?? null;
+  const eventTitle = safeTitleFragment(searchParams.eventTitle);
 
   const displayYear = !isNaN(year) ? String(year) : "";
 
@@ -35,8 +33,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   // not available at metadata generation time).
   const description = `Discover what the world could have been like in ${displayYear}. An AI-generated alternative history scenario.`;
 
-  // OG image: use the generated image when available; fall back to default.
-  const ogImageUrl = imageUrl ?? OG_DEFAULT_IMAGE;
+  // OG image: use the generated image when it is on the allowlist, else default.
+  const ogImageUrl = safeOgImage(searchParams.imageUrl);
   const ogImages = [{ url: ogImageUrl, width: 1200, height: 630 }];
 
   return {
@@ -59,7 +57,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default function ScenarioPage({ searchParams }: Props) {
   const year = parseInt(searchParams.year ?? "", 10);
-  const lang = (searchParams.lang ?? "en") as Lang;
+  // English-only product (see types/index.ts). Anything else in the query
+  // string is ignored rather than trusted — lang is echoed into links and,
+  // via ScenarioRequest, into the model prompt.
+  const lang: Lang = "en";
 
   let request: ScenarioRequest | undefined;
   try {

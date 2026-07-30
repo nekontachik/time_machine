@@ -14,7 +14,7 @@
 ## API Routes
 | Route | Method | Purpose |
 |---|---|---|
-| `/api/historical-events` | GET | Top-5 events for year; Redis cache-first → OpenRouter |
+| `/api/historical-events` | GET | Top-3 events for year; Redis cache-first → OpenRouter |
 | `/api/scenario` | POST | Streaming alternative history (ReadableStream) |
 | `/api/image` | POST | Flux 1 Schnell image via fal.ai |
 | `/api/test-flux` | POST | Dev-only endpoint (blocked in production) |

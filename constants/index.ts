@@ -18,12 +18,6 @@ export const SCENARIO_MODEL = "anthropic/claude-sonnet-4.6";
 /** fal.ai model for image generation */
 export const IMAGE_MODEL = "fal-ai/flux/schnell";
 
-/** fal.ai model for image-to-video generation
- *  v2.5-turbo/standard: ~15–30 s per clip (vs v2/master 60–120 s)
- *  Same input/output schema — just faster and cheaper.
- */
-export const VIDEO_MODEL = "fal-ai/kling-video/v2.5-turbo/standard/image-to-video";
-
 // ---------------------------------------------------------------------------
 // Cache / rate-limit
 // ---------------------------------------------------------------------------
@@ -31,8 +25,20 @@ export const VIDEO_MODEL = "fal-ai/kling-video/v2.5-turbo/standard/image-to-vide
 /** TTL for cached historical events (24 h) */
 export const EVENTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 
-/** Default free requests per day when RATE_LIMIT_FREE env is not set */
-export const DEFAULT_RATE_LIMIT = 3;
+/** Default free requests per day when RATE_LIMIT_FREE env is not set.
+ *  Used as fallback for the scenario bucket. */
+export const DEFAULT_RATE_LIMIT = 10;
+
+/** Per-IP daily limits for each expensive AI endpoint.
+ *  Override at runtime via env (RATE_LIMIT_SCENARIO, RATE_LIMIT_EVENTS,
+ *  RATE_LIMIT_IMAGE) — see lib/infrastructure/rate-limit.ts. */
+export const BUCKET_LIMITS = {
+  scenario: 10,
+  events: 30,
+  image: 10,
+} as const;
+
+export type BucketName = keyof typeof BUCKET_LIMITS;
 
 // ---------------------------------------------------------------------------
 // Image generation

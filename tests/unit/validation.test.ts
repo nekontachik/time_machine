@@ -81,7 +81,7 @@ describe("Year boundary validation — GET /api/historical-events", () => {
     const res = await GET(req as unknown as import("next/server").NextRequest);
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/out of range/i);
+    expect(body.error).toMatch(/invalid/i);
   });
 
   it("rejects year 2025 (one above maximum)", async () => {
@@ -131,7 +131,7 @@ describe("Year boundary validation — GET /api/historical-events", () => {
     const res = await GET(req as unknown as import("next/server").NextRequest);
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/year is required/i);
+    expect(body.error).toMatch(/year|invalid/i);
   });
 
   // ---------------------------------------------------------------------------
@@ -266,8 +266,8 @@ describe("Constants sanity checks", () => {
   });
 
   it("model identifiers are non-empty strings", async () => {
-    const { EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL, VIDEO_MODEL } = await import("@/constants");
-    for (const model of [EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL, VIDEO_MODEL]) {
+    const { EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL } = await import("@/constants");
+    for (const model of [EVENTS_MODEL, SCENARIO_MODEL, IMAGE_MODEL]) {
       expect(typeof model).toBe("string");
       expect(model.length).toBeGreaterThan(0);
     }

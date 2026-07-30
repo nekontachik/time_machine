@@ -105,7 +105,7 @@ describe("checkRateLimit — with in-memory Redis", () => {
     const today = new Date().toISOString().split("T")[0];
     await checkRateLimit("5.5.5.5");
 
-    const key = `ratelimit:5.5.5.5:${today}`;
+    const key = `ratelimit:scenario:5.5.5.5:${today}`;
     const value = await mockRedis.get(key);
     expect(value).toBe("1");
   });
@@ -114,7 +114,7 @@ describe("checkRateLimit — with in-memory Redis", () => {
     const today = new Date().toISOString().split("T")[0];
     await checkRateLimit("6.6.6.6");
 
-    const key = `ratelimit:6.6.6.6:${today}`;
+    const key = `ratelimit:scenario:6.6.6.6:${today}`;
     const ttl = await mockRedis.ttl(key);
     // TTL should be set and ≤ 86400 (24h)
     expect(ttl).toBeGreaterThan(0);

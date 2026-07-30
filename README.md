@@ -9,15 +9,14 @@
 
 https://github.com/user-attachments/assets/e35a1360-2a20-4105-a0d3-989c63cf1e58
 
-An AI-powered Progressive Web App that lets users explore alternative history scenarios. Pick a historical year, toggle which events happened or didn't, and get a vivid AI-generated narrative with cinematic imagery and video.
+An AI-powered Progressive Web App that lets users explore alternative history scenarios. Pick a historical year, toggle which events happened or didn't, and get a vivid AI-generated narrative with cinematic imagery.
 
 ## Features
 
 - **Year Explorer** — slider spanning 3000 BCE to 2024 CE with Three.js starfield animation
-- **AI Event Generation** — top-5 events for any year via Gemini 2.0 Flash (OpenRouter)
+- **AI Event Generation** — top-3 events for any year via Gemini 2.0 Flash (OpenRouter)
 - **Streaming Scenarios** — real-time alternative history narratives via Claude Sonnet (OpenRouter)
 - **AI Image Generation** — cinematic scene images via Flux Schnell (fal.ai)
-- **AI Video Generation** — image-to-video via Kling 2.0 (fal.ai), with mock mode for development
 - **Rate Limiting** — per-IP daily limits with Redis, fail-open when Redis is unavailable
 - **i18n** — Ukrainian and English via next-intl
 - **PWA** — installable with offline support via service worker
@@ -46,7 +45,6 @@ _Measured with Lighthouse 13.0.1 via PageSpeed Insights · March 2026_
 | 3D | Three.js (lazy-loaded starfield) |
 | AI Text | OpenRouter API (Gemini 2.0 Flash + Claude Sonnet) |
 | AI Images | fal.ai (Flux Schnell) |
-| AI Video | fal.ai (Kling 2.0 Master) |
 | Cache | Redis (ioredis) |
 | i18n | next-intl v3 |
 | Testing | Vitest (unit/API) + Playwright (E2E) |
@@ -78,7 +76,7 @@ cp .env.local.example .env.local
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENROUTER_API_KEY` | Yes | Text generation (events + scenarios) |
-| `FAL_KEY` | Yes | Image + video generation via fal.ai |
+| `FAL_KEY` | Yes | Image generation via fal.ai |
 | `REDIS_URL` | No | Cache + rate limiting (fail-open without) |
 | `RATE_LIMIT_FREE` | No | Free requests per day per IP (default: 3) |
 | `NEXT_PUBLIC_APP_URL` | No | App URL for OG meta (default: http://localhost:3000) |
@@ -109,8 +107,6 @@ npm run test:coverage # with coverage report
 
 - **lib/ai/image** — `FalAuthError` classification, retry logic, auth bail-out, placeholder fallback (98% coverage)
 - **lib/ai/text** — event generation, context enrichment, streaming scenario output (100% coverage)
-- **lib/ai/video-prompt** — scenario type detection, motion prompt generation, word limits
-- **lib/video-providers/kling** — mock mode task lifecycle (create → poll → complete)
 - **lib/infrastructure** — Redis fail-open, rate limiting, per-IP extraction
 - **API routes** — input validation, error codes, rate limiting, premium gating
 - **streamScenario** — chunk streaming, premium city/country context injection, empty stream handling
@@ -168,11 +164,9 @@ Claude produces richer, more literary narratives but occasionally exceeds struct
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/historical-events` | GET | Top-5 events for a year (Redis cache-first) |
+| `/api/historical-events` | GET | Top-3 events for a year (Redis cache-first) |
 | `/api/scenario` | POST | Streaming alternative history narrative |
 | `/api/image` | POST | AI image generation (Flux via fal.ai) |
-| `/api/video/create` | POST | Start video generation task (premium) |
-| `/api/video/status` | GET | Poll video task status (premium) |
 
 ## Architecture
 
@@ -192,7 +186,6 @@ flowchart TD
         EventsAPI["/api/historical-events"]
         ScenarioAPI["/api/scenario\n(ReadableStream)"]
         ImageAPI["/api/image"]
-        VideoAPI["/api/video/create\n/api/video/status"]
     end
 
     subgraph External ["External Services"]
@@ -200,7 +193,6 @@ flowchart TD
         OR_Gemini["OpenRouter\nGemini 2.0 Flash"]
         OR_Claude["OpenRouter\nClaude Sonnet"]
         Flux["fal.ai\nFlux Schnell"]
-        Kling["fal.ai\nKling 2.0 Master"]
     end
 
     User --> Slider --> EventCards --> ScenarioUI
@@ -218,7 +210,6 @@ flowchart TD
     ImageAPI --> Flux
 
     MW --> VideoAPI
-    VideoAPI --> Kling
     ScenarioUI -->|premium flow| PremiumModal
 ```
 
@@ -242,14 +233,10 @@ lib/
 │   ├── text.ts             # OpenRouter text generation (server-only)
 │   ├── image.ts            # fal.ai image generation (server-only)
 │   ├── search.ts           # Tavily web search (server-only)
-│   └── video-prompt.ts     # Motion prompt builder
 ├── infrastructure/
 │   ├── redis-client.ts     # Redis cache client (server-only)
 │   ├── rate-limit.ts       # Per-IP rate limiting (server-only)
 │   └── cache.ts            # Event cache wrapper (server-only)
-├── video-providers/
-│   └── kling.ts            # Kling video via fal.ai (server-only)
-├── premium.ts              # Premium status check (server-only)
 └── formatYear.ts           # Year formatting utility
 ```
 
@@ -274,7 +261,6 @@ lib/
 | Scenario narrative | OpenRouter | Claude Sonnet | ~$0.018 (2048 tokens) |
 | Image generation | fal.ai | Flux Schnell | ~$0.003 |
 | **Total (free tier)** | | | **~$0.025** |
-| Video generation | fal.ai | Kling 2.0 | ~$0.10 (premium only) |
 
 _At 100 daily users (3 requests each): estimated ~$7.50/day for text+image, with caching reducing repeat requests significantly._
 

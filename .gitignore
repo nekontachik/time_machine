@@ -14,6 +14,11 @@
 /.next/
 /out/
 
+# PWA — the service worker is generated from app/sw.ts by @serwist/next
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+
 # production
 /build
 
