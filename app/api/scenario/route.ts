@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamScenario } from "@/lib/ai/text";
+import { buildChangesString } from "@/lib/ai/changes";
 import { checkBucketLimit, getClientIp } from "@/lib/infrastructure/rate-limit";
 import { parseJsonBody, ScenarioRequestSchema } from "@/lib/validators";
 
@@ -17,22 +18,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Server-side trust boundary: the client toggle UI is NOT a trust boundary,
+  // so the whole body is schema-validated before any of it reaches the model
+  // prompt (see redteam/VULN_TAXONOMY.md). ScenarioRequestSchema supersedes
+  // the older validateScenarioEvents() check — it enforces the same event
+  // contract plus .strict() on every object and a cap on `premium`.
   const result = await parseJsonBody(req, ScenarioRequestSchema);
   if (!result.ok) {
     return NextResponse.json(result.body, { status: result.status });
   }
-  const { year, events, customText, lang, premium } = result.data;
+  const { year, events, lang, premium } = result.data;
 
-  const changedEvents = events
-    .filter((e) => !e.happened)
-    .map((e) => (e.title ? `"${e.title}" did NOT happen` : `event ${e.id} did NOT happen`));
-
-  if (customText) changedEvents.push(`Custom note: ${customText}`);
-
-  const changes =
-    changedEvents.length > 0
-      ? changedEvents.join("; ")
-      : "all events happened as recorded";
+  // Shared with the eval harness so the traces it produces use byte-identical
+  // prompts. Returns NO_CHANGES_SENTINEL when nothing was toggled off, which
+  // scenarioPrompt detects to avoid the none-recap failure mode.
+  const changes = buildChangesString(events);
 
   try {
     const stream = await streamScenario({ year, changes, lang, premium });

@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
   }
   const year = yearParsed.data;
 
-  const langParsed = LangSchema.safeParse(searchParams.get("lang") ?? "ua");
+  const langParsed = LangSchema.safeParse(searchParams.get("lang") ?? "en");
   if (!langParsed.success) {
     return NextResponse.json(
-      { error: "Invalid lang — must be one of ua, en, es, pt, pl" },
+      { error: "Invalid lang — the product ships in English only" },
       { status: 400 }
     );
   }

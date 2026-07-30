@@ -1,0 +1,64 @@
+[dotenv@17.3.1] injecting env (8) from .env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[1/60] 44 BCE (high) r1 … before 3 / after 2
+[2/60] 44 BCE (high) r2 … before 3 / after 2
+[3/60] 44 BCE (high) r3 … before 3 / after 2
+[4/60] 79 (high) r1 … before 3 / after 2
+[5/60] 79 (high) r2 … before 3 / after 2
+[6/60] 79 (high) r3 … before 3 / after 2
+[7/60] 1066 (high) r1 … before 3 / after 3
+[8/60] 1066 (high) r2 … before 3 / after 3
+[9/60] 1066 (high) r3 … before 3 / after 3
+[10/60] 1347 (high) r1 … before 3 / after 3
+[11/60] 1347 (high) r2 … before 3 / after 3
+[12/60] 1347 (high) r3 … before 3 / after 3
+[13/60] 1517 (high) r1 … before 3 / after 3
+[14/60] 1517 (high) r2 … before 3 / after 2
+[15/60] 1517 (high) r3 … before 3 / after 2
+[16/60] 1789 (high) r1 … before 3 / after 3
+[17/60] 1789 (high) r2 … before 3 / after 3
+[18/60] 1789 (high) r3 … before 3 / after 3
+[19/60] 1914 (high) r1 … before 3 / after 3
+[20/60] 1914 (high) r2 … before 3 / after 3
+[21/60] 1914 (high) r3 … before 3 / after 2
+[22/60] 1969 (high) r1 … before 3 / after 3
+[23/60] 1969 (high) r2 … before 3 / after 3
+[24/60] 1969 (high) r3 … before 3 / after 3
+[25/60] 1989 (high) r1 … before 3 / after 3
+[26/60] 1989 (high) r2 … before 3 / after 3
+[27/60] 1989 (high) r3 … before 3 / after 3
+[28/60] 753 BCE (medium) r1 … before 3 / after 1
+[29/60] 753 BCE (medium) r2 … before 3 / after 1
+[30/60] 753 BCE (medium) r3 … before 3 / after 1
+[31/60] 410 (medium) r1 … before 3 / after 2
+[32/60] 410 (medium) r2 … before 3 / after 2
+[33/60] 410 (medium) r3 … before 3 / after 2
+[34/60] 313 (medium) r1 … before 3 / after 2
+[35/60] 313 (medium) r2 … before 3 / after 2
+[36/60] 313 (medium) r3 … before 3 / after 2
+[37/60] 800 (medium) r1 … before 3 / after 2
+[38/60] 800 (medium) r2 … before 3 / after 2
+[39/60] 800 (medium) r3 … before 3 / after 2
+[40/60] 1648 (medium) r1 … before 3 / after 3
+[41/60] 1648 (medium) r2 … before 3 / after 3
+[42/60] 1648 (medium) r3 … before 3 / after 3
+[43/60] 1755 (medium) r1 … before 3 / after 3
+[44/60] 1755 (medium) r2 … before 3 / after 3
+[45/60] 1755 (medium) r3 … before 3 / after 3
+[46/60] 1871 (medium) r1 … before 3 / after 3
+[47/60] 1871 (medium) r2 … before 3 / after 3
+[48/60] 1871 (medium) r3 … before 3 / after 3
+[49/60] 1973 (medium) r1 … before 3 / after 3
+[50/60] 1973 (medium) r2 … before 3 / after 3
+[51/60] 1973 (medium) r3 … before 3 / after 3
+[52/60] 3000 BCE (low) r1 … before 3 / after 2
+[53/60] 3000 BCE (low) r2 … before 3 / after 2
+[54/60] 3000 BCE (low) r3 … before 3 / after 2
+[55/60] 1237 (low) r1 … before 3 / after 2
+[56/60] 1237 (low) r2 … before 3 / after 3
+[57/60] 1237 (low) r3 … before 3 / after 2
+[58/60] 1816 (low) r1 … before 3 / after 3
+[59/60] 1816 (low) r2 … before 3 / after 3
+[60/60] 1816 (low) r3 … before 3 / after 3
+
+--- done --- 60/60 calls -> scripts/eval/out/q1-density-shift.md

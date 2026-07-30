@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { MIN_YEAR, MAX_YEAR } from "@/constants";
+import { MIN_YEAR, MAX_YEAR, MAX_EVENTS, MAX_EVENT_TITLE_LEN } from "@/constants";
 
 /**
  * Centralised request-body validators.
@@ -10,7 +10,7 @@ import { MIN_YEAR, MAX_YEAR } from "@/constants";
  * from silently succeeding on the wire.
  *
  * Lang values are an enum (no free-form strings), which closes the
- * prompt-injection vector where `lang=ua\nIGNORE PREVIOUS...` would
+ * prompt-injection vector where `lang=en\nIGNORE PREVIOUS...` would
  * land inside the LLM template.
  */
 
@@ -18,7 +18,10 @@ import { MIN_YEAR, MAX_YEAR } from "@/constants";
 // Primitives
 // ---------------------------------------------------------------------------
 
-export const LangSchema = z.enum(["ua", "en", "es", "pt", "pl"]);
+/** The product ships in English only (see types/index.ts). Keeping this an
+ *  enum rather than a literal means adding a locale is a one-word change and
+ *  every call site stays validated. */
+export const LangSchema = z.enum(["en"]);
 
 /** Year as a JSON-body number (not coerced). Used by POST handlers. */
 export const YearSchema = z
@@ -36,13 +39,6 @@ export const YearParamSchema = z
   .transform((v) => parseInt(v, 10))
   .pipe(z.number().int().min(MIN_YEAR).max(MAX_YEAR));
 
-/** Single-line short text, used for free-form user notes. Newlines are
- *  collapsed to single spaces to avoid promp-template breakouts. */
-export const ShortNoteSchema = z
-  .string()
-  .max(300)
-  .transform((s) => s.replace(/[\r\n]+/g, " ").trim());
-
 // ---------------------------------------------------------------------------
 // Domain shapes
 // ---------------------------------------------------------------------------
@@ -51,15 +47,19 @@ export const EventToggleSchema = z
   .object({
     id: z.string().max(50),
     happened: z.boolean(),
-    title: z.string().max(200).optional(),
+    title: z.string().max(MAX_EVENT_TITLE_LEN).optional(),
   })
   .strict();
 
 export const ScenarioRequestSchema = z
   .object({
     year: YearSchema,
-    events: z.array(EventToggleSchema).min(1).max(10),
-    customText: ShortNoteSchema.optional(),
+    // An EMPTY array is valid: it is the legitimate "user changed nothing"
+    // case, which buildChangesString turns into NO_CHANGES_SENTINEL so the
+    // prompt can pick its own divergence instead of recapping real history
+    // (the none-recap failure mode in TAXONOMY.md). MAX_EVENTS caps the
+    // adversarial upper bound.
+    events: z.array(EventToggleSchema).max(MAX_EVENTS),
     lang: LangSchema,
     premium: z
       .object({

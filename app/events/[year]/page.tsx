@@ -79,7 +79,7 @@ export default async function EventsPage({ params, searchParams }: Props) {
     }
   }
 
-  const backLabel = lang === "en" ? "Choose another year" : "Обрати інший рік";
+  const backLabel = "Choose another year";
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">

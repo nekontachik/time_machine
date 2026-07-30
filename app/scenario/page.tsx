@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import ScenarioStream from "@/components/features/ScenarioStream/ScenarioStream";
 // import ShareCard from "@/components/ShareCard/ShareCard";
 import type { ScenarioRequest, Lang } from "@/types";
-import { LangSchema } from "@/lib/validators";
 import { safeOgImage, safeTitleFragment } from "@/lib/og";
 import { formatYear } from "@/lib/formatYear";
 
@@ -14,38 +13,25 @@ interface Props {
     lang?: string;
     events?: string;
     imageUrl?: string;
-    /** Title of the first "didn't happen" event — used for OG "Що якби X не сталося?" */
+    /** Title of the first "didn't happen" event — used for the OG title. */
     eventTitle?: string;
   };
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const year = parseInt(searchParams.year ?? "", 10);
-  const langParsed = LangSchema.safeParse(searchParams.lang ?? "ua");
-  const lang: Lang = langParsed.success ? langParsed.data : "ua";
   const eventTitle = safeTitleFragment(searchParams.eventTitle);
-  const isEn = lang === "en";
 
   const displayYear = !isNaN(year) ? String(year) : "";
 
-  // Title: "Що якби X не сталося? | Time Machine" when event title is available,
-  // otherwise fall back to the year-based generic title.
-  let title: string;
-  if (eventTitle) {
-    title = isEn
-      ? `What if ${eventTitle} never happened? | Time Machine`
-      : `Що якби «${eventTitle}» не сталося? | Time Machine`;
-  } else {
-    title = isEn
-      ? `Alternative History${displayYear ? ` — ${displayYear}` : ""} | Time Machine`
-      : `Альтернативна історія${displayYear ? ` — ${displayYear}` : ""} | Time Machine`;
-  }
+  // Title: event-specific when a title is available, otherwise year-based generic.
+  const title = eventTitle
+    ? `What if ${eventTitle} never happened? | Time Machine`
+    : `Alternative History${displayYear ? ` — ${displayYear}` : ""} | Time Machine`;
 
-  // Description: generic AI blurb (scenario text is not available server-side at
-  // metadata generation time — it is streamed client-side).
-  const description = isEn
-    ? `Discover what the world could have been like in ${displayYear}. An AI-generated alternative history scenario.`
-    : `Дізнайтесь, яким міг бути світ у ${displayYear}. Альтернативна історія, згенерована ШІ.`;
+  // Description: generic AI blurb (scenario text is streamed client-side and is
+  // not available at metadata generation time).
+  const description = `Discover what the world could have been like in ${displayYear}. An AI-generated alternative history scenario.`;
 
   // OG image: use the generated image when it is on the allowlist, else default.
   const ogImageUrl = safeOgImage(searchParams.imageUrl);
@@ -71,9 +57,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default function ScenarioPage({ searchParams }: Props) {
   const year = parseInt(searchParams.year ?? "", 10);
-  const langParsed = LangSchema.safeParse(searchParams.lang ?? "ua");
-  const lang: Lang = langParsed.success ? langParsed.data : "ua";
-  const isEn = lang === "en";
+  // English-only product (see types/index.ts). Anything else in the query
+  // string is ignored rather than trusted — lang is echoed into links and,
+  // via ScenarioRequest, into the model prompt.
+  const lang: Lang = "en";
 
   let request: ScenarioRequest | undefined;
   try {
@@ -87,17 +74,15 @@ export default function ScenarioPage({ searchParams }: Props) {
 
   const displayYear = !isNaN(year) ? formatYear(year) : "";
 
-  const title = isEn ? "Alternative History" : "Альтернативна історія";
-  const generating = isEn ? "Generating..." : "Генерація...";
-
-  const backLabel = isEn ? "New scenario" : "Новий сценарій";
-  const backToYearLabel = isEn ? "Choose another year" : "Обрати інший рік";
+  const title = "Alternative History";
+  const generating = "Generating...";
+  const backLabel = "New scenario";
+  const backToYearLabel = "Choose another year";
 
   // If no valid request could be built, show a friendly message instead of an error
   if (!request) {
-    const missingMsg = isEn
-      ? "No events selected. Please go back and choose events to generate a scenario."
-      : "Не обрано подій. Поверніться назад і оберіть події для генерації сценарію.";
+    const missingMsg =
+      "No events selected. Please go back and choose events to generate a scenario.";
 
     return (
       <main className="mx-auto max-w-2xl px-4 py-16">
@@ -114,7 +99,7 @@ export default function ScenarioPage({ searchParams }: Props) {
             href={!isNaN(year) ? `/events/${year}?lang=${lang}` : "/"}
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            ← {!isNaN(year) ? (isEn ? "Back to events" : "Назад до подій") : backLabel}
+            ← {!isNaN(year) ? "Back to events" : backLabel}
           </Link>
         </div>
       </main>

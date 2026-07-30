@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../../",
+    "paths": {
+      "@/*": ["./*"],
+      "server-only": ["./scripts/eval/shims/server-only.ts"]
+    }
+  },
+  "include": ["./**/*.ts", "../../lib/ai/prompts.ts", "../../lib/ai/changes.ts", "../../types/index.ts", "../../constants/index.ts"]
+}

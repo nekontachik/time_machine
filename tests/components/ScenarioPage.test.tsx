@@ -47,9 +47,9 @@ describe("ScenarioPage — missing params fallback", () => {
     // Should NOT show raw JSON error
     expect(screen.queryByText(/year, events, and lang are required/i)).not.toBeInTheDocument();
 
-    // Should show user-friendly message (default lang is ua)
+    // Should show user-friendly message (default lang is en)
     expect(
-      screen.getByText(/Не обрано подій/i)
+      screen.getByText(/No events selected/i)
     ).toBeInTheDocument();
   });
 

@@ -14,6 +14,11 @@ VIOLATIONS=()
 EXCLUDED_PATTERNS=(
   "lib/formatYear.ts"
   "lib/mocks/events.ts"
+  # Pure prompt/string builders — no secrets, no I/O, safe to import anywhere
+  # (the eval harness imports them outside the server runtime). text.ts wraps
+  # them and adds its own server-only guard.
+  "lib/ai/prompts.ts"
+  "lib/ai/changes.ts"
 )
 
 is_excluded() {

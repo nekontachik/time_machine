@@ -1,4 +1,5 @@
-export type Lang = "ua" | "en" | "es" | "pt" | "pl";
+/** The product ships in English only. */
+export type Lang = "en";
 
 export type ImpactLevel = "high" | "medium" | "low";
 
@@ -26,7 +27,6 @@ export interface PremiumOptions {
 export interface ScenarioRequest {
   year: number;
   events: EventToggle[];
-  customText?: string;
   lang: Lang;
   premium?: PremiumOptions;
 }

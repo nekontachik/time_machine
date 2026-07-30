@@ -132,7 +132,10 @@ describe("POST /api/scenario — streaming", () => {
     expect(res.headers.get("X-RateLimit-Remaining")).toBe("0");
   });
 
-  it("rejects empty events array (now enforced by zod)", async () => {
+  it("accepts an empty events array — the no-changes case", async () => {
+    // Empty means the user toggled nothing off. buildChangesString maps it to
+    // NO_CHANGES_SENTINEL and the prompt picks its own divergence; rejecting it
+    // would break the documented contract and the none-recap handling.
     const req = new Request("http://localhost/api/scenario", {
       method: "POST",
       body: JSON.stringify({ year: 1969, events: [], lang: "en" }),
@@ -140,31 +143,7 @@ describe("POST /api/scenario — streaming", () => {
     });
 
     const res = await POST(req as unknown as import("next/server").NextRequest);
-    expect(res.status).toBe(400);
-  });
-
-  it("passes customText into the changes string", async () => {
-    let capturedChanges = "";
-    mockStreamScenario.mockImplementation(
-      ({ changes }: { changes: string }) => {
-        capturedChanges = changes;
-        return Promise.resolve(makeStream(["ok"]));
-      }
-    );
-
-    const req = new Request("http://localhost/api/scenario", {
-      method: "POST",
-      body: JSON.stringify({
-        year: 1969,
-        events: [{ id: "1", happened: true }],
-        customText: "Tesla was still alive",
-        lang: "en",
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
-
-    await POST(req as unknown as import("next/server").NextRequest);
-    expect(capturedChanges).toContain("Tesla was still alive");
+    expect(res.status).toBe(200);
   });
 
   it("passes premium options to streamScenario", async () => {
