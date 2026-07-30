@@ -67,21 +67,51 @@ check(
 );
 
 // --- 2. gold set: payoff labels --------------------------------------------
+// Vocabulary + placeholder rules mirror loadGold() in runJudge.ts and
+// load_gold() in deepeval/run_parity.py. Three parsers read this one file; if
+// you change the rule, change it in all three (a drift between them means CI
+// and the judge disagree about what the gold set says).
 const GOLD = "evals1/payoff-review.md";
 const GOLD_FAIL = /\bsame\b|схож|convergent|recap|переказ/i; // = payoff cfg in runJudge.ts
+const GOLD_GOOD = /\bdiff\b|different|інш/i; // = payoff cfg in runJudge.ts
+const PLACEHOLDER = /^(?:[\s\-–—_.*]+|todo|tbd|n\/?a|\?+|pending|unclear|wip|xxx)$/i;
 const txt = readFileSync(GOLD, "utf-8");
 const blocks = txt.split(/\n### (T\d+-r\d+)/);
 const labels = new Map<string, "fail" | "good">();
+const unusable: string[] = [];
 for (let i = 1; i < blocks.length; i += 2) {
+  const id = blocks[i].trim();
   const note = (
     blocks[i + 1].match(/\*\*(?:Note|Твоя нотатка):\*\*\s*(.*)/)?.[1] ?? ""
-  ).toLowerCase();
-  if (!note.trim()) continue;
-  labels.set(blocks[i].trim(), GOLD_FAIL.test(note) ? "fail" : "good");
+  )
+    .trim()
+    .toLowerCase();
+  if (!note) continue;
+  if (PLACEHOLDER.test(note)) {
+    unusable.push(`${id}: placeholder ${JSON.stringify(note)}`);
+    continue;
+  }
+  const isFail = GOLD_FAIL.test(note);
+  if (!isFail && !GOLD_GOOD.test(note)) {
+    unusable.push(`${id}: unrecognized note ${JSON.stringify(note)}`);
+    continue;
+  }
+  if (labels.has(id)) {
+    unusable.push(`${id}: duplicate card`);
+    continue;
+  }
+  labels.set(id, isFail ? "fail" : "good");
 }
 const goldFails = Array.from(labels.values()).filter((v) => v === "fail").length;
 check(`${GOLD}: 100 labels`, labels.size === 100, `got ${labels.size}`);
 check(`${GOLD}: 13 gold fails`, goldFails === 13, `got ${goldFails}`);
+// A note that is neither `same` nor `diff` used to be silently filed as "good".
+// That is the defect class this whole file exists to catch — so name it.
+check(
+  `${GOLD}: every note is a usable label`,
+  unusable.length === 0,
+  unusable.slice(0, 5).join(" · ")
+);
 
 // --- 3. real-trace files must never contain stubs ---------------------------
 // (traces.jsonl is deliberately absent: committed in its post-incident stub
