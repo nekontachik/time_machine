@@ -1,12 +1,40 @@
+/**
+ * Prompt parity guard — the evidence behind "the harness traces are real"
+ * (scripts/eval/README.md, "Faithfulness"). It pins the PRODUCTION prompts that
+ * runTraces.ts sends, so a prompt edit cannot silently change what the eval
+ * harness measures.
+ *
+ *   npm run eval:parity
+ *
+ * Byte-for-byte assertions use eq(); ok() is only for shape/flag checks that
+ * have no single canonical string. Prefer eq() — a prefix or substring check
+ * pins one line and rots quietly, which is exactly how the events prompt drifted
+ * (v0 "Return exactly 3…" → v2 "Return up to 3…") without anyone noticing.
+ *
+ * SCOPE: product prompts only. The JUDGE prompt is pinned separately, and more
+ * strictly, by scripts/eval/deepeval/test_prompt_source_parity.py — it parses
+ * payoffJudge.ts source and byte-compares it to the Python port across four
+ * years. Do not duplicate that here.
+ */
 import { scenarioPrompt, eventTitlesPrompt } from "@/lib/ai/prompts";
 import { buildChangesString, NO_CHANGES_SENTINEL } from "@/lib/ai/changes";
 import { EVENTS_MODEL, SCENARIO_MODEL } from "@/constants";
 import type { EventToggle } from "@/types";
 
 let fail = 0;
+/** Byte-for-byte. On mismatch, print the first differing offset — a 900-char
+ *  diff of two near-identical prompts is unreadable without it. */
 const eq = (name: string, got: string, want: string) => {
-  if (got !== want) { fail++; console.log(`FAIL ${name}\n--got--\n${got}\n--want--\n${want}`); }
-  else console.log(`ok   ${name}`);
+  if (got === want) { console.log(`ok   ${name}`); return; }
+  fail++;
+  let i = 0;
+  while (i < got.length && i < want.length && got[i] === want[i]) i++;
+  console.log(
+    `FAIL ${name}\n  first difference at char ${i}\n` +
+      `  got : …${JSON.stringify(got.slice(Math.max(0, i - 30), i + 40))}\n` +
+      `  want: …${JSON.stringify(want.slice(Math.max(0, i - 30), i + 40))}\n` +
+      `  (lengths: got ${got.length}, want ${want.length})`
+  );
 };
 const ok = (name: string, cond: boolean) =>
   console.log(cond ? `ok   ${name}` : (fail++, `FAIL ${name}`));
@@ -43,11 +71,34 @@ ok("scenario.none-diverges",
   !spNone.messages[1].content.includes("Changed events:") &&
   /counterfactual|do NOT retell/i.test(spNone.messages[1].content));
 
-// events prompt: model/tokens + shape (JSON object with 3 items)
+// --- events prompt: user content byte-for-byte ---
+// This used to be a startsWith() on "Return exactly 3 key events…". The v2
+// year-accuracy prompt (fix-01-recall-regression.md) changed that opening to
+// "Return up to 3…" and shipped to lib/ai/prompts.ts, but the assertion was
+// never updated — so the guard sat red and, because nothing ran it, nobody
+// noticed. A prefix check would have gone stale the same way again: it only
+// pins the first line. Pin the whole thing.
+const wantEventsUser = `Return up to 3 key events from the year 1969.
+
+Year accuracy is the one hard rule:
+- Include ONLY events that actually occurred in 1969.
+- Include EVERY event you are confident happened in 1969, up to a maximum of 3 — do NOT withhold correct events, and prefer 3 when three genuine 1969 events exist.
+- NEVER add an event from a different year to reach three. If fewer than 3 notable events occurred in 1969, return only those.
+- If you are unsure whether an event happened in exactly 1969, leave it out.
+
+Other rules (never at the expense of the hard rule):
+- Cover diverse domains (politics, science/tech, culture, military, social/economic) when several genuine same-year events exist.
+- Each description: 2–3 sentences — what happened, why it mattered, what it changed.
+- Include a specific month/day ONLY when it is actually known for that event; never invent precision. For deep antiquity where exact dating is impossible, state the timing approximately (e.g., "around this time") rather than a false exact date.
+- Impact: "high" = shaped a decade or more; "medium" = notable regional/global effect; "low" = limited direct consequence.
+- Sort by impact descending.
+- Output language: en.
+
+Return a JSON object {"events":[{"id":"1","title":"...","description":"...","impact":"high|medium|low"}]} with up to 3 items, every one genuinely from 1969.`;
 const ep = eventTitlesPrompt(1969, "en");
+eq("events.system", ep.messages[0].content, "You are a meticulous historian and science communicator. Return only valid JSON, no markdown.");
+eq("events.user", ep.messages[1].content, wantEventsUser);
 ok("events.model", ep.model === EVENTS_MODEL && ep.maxTokens > 0);
-ok("events.user", ep.messages[1].content.startsWith("Return exactly 3 key events from the year 1969.")
-  && ep.messages[1].content.includes('{"events":'));
 const epBce = eventTitlesPrompt(-44, "en");
 ok("events.bce-label", epBce.messages[1].content.includes("from the year 44 BCE."));
 

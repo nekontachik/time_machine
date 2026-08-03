@@ -187,6 +187,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Must run BEFORE the smoke steps: if the harness no longer sends the
+      # production prompt, everything downstream measures the wrong system.
+      - name: Prompt parity (harness prompts == production prompts)
+        run: npm run eval:parity
+
       - name: Eval-data integrity (committed reference artifacts)
         run: npm run eval:ci
 

@@ -27,12 +27,27 @@ not re-implemented:
 - `lib/ai/prompts.ts` — the exact event + scenario prompts (also used by `lib/ai/text.ts`)
 - `lib/ai/changes.ts` — the exact toggle→`changes` string (also used by `app/api/scenario/route.ts`)
 
-`_parity.ts` asserts the extracted prompts/string match the original inline text
-byte-for-byte. Run it after touching prompts:
+`_parity.ts` pins the production prompt text byte-for-byte, so a prompt edit
+cannot silently change what the harness measures. It runs on every PR (CI job
+"⚖️ Eval Harness (dry)"), and locally:
 
 ```
-tsx --tsconfig scripts/eval/tsconfig.json scripts/eval/_parity.ts
+npm run eval:parity
 ```
+
+The judge prompt is pinned separately and more strictly, by
+`deepeval/test_prompt_source_parity.py` — it parses `judges/payoffJudge.ts`
+source and byte-compares it to the Python port across four years.
+
+**Known gap in faithfulness — one request field is not reproduced.**
+`lib/ai/prompts.ts` attaches `responseFormat: EVENT_TITLES_RESPONSE_FORMAT` to
+the events prompt, and production forwards it (`lib/ai/text.ts:39` sends
+`response_format`). The harness client does not: `openrouter.ts` sends only
+`{model, max_tokens, messages}`. So harness event generation runs WITHOUT
+structured outputs while production runs with them. The prompt text is
+identical; the request is not. Closing this would change how future traces are
+generated, so it is deliberately left as a documented limitation rather than a
+silent change — the committed traces were produced under the current behavior.
 
 ## The 5 → 3 events fix (Counterfactual Complexity)
 
