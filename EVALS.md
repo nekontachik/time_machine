@@ -28,7 +28,7 @@ The signal that drove everything: NONE-recap was not a "bad model" problem but a
 
 ## Fix + triple verification
 
-I fixed NONE-recap at the prompt level. Recap rate on the `none` cohort dropped from **11/20 → 0/20**, verified three independent ways: the regex detector (0/20), the calibrated judge (0/20), and a full manual read of all 20 (0/20). The detector's known blind spot (recall 0.85) was checked directly and came back empty.
+I fixed NONE-recap at the prompt level. Recap rate on the `none` cohort dropped from **13/20 → 0/20** (human count; the regex detector saw only 11 of those 13 — its recall-0.85 blind spot in practice), verified three independent ways: the regex detector (0/20), the calibrated judge (0/20), and a full manual read of all 20 (0/20). The detector's known blind spot was checked directly and came back empty.
 
 ## Judge calibration (validating the validator)
 
