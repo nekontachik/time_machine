@@ -6,6 +6,12 @@
   "regions": [
     "fra1"
   ],
+  "crons": [
+    {
+      "path": "/api/health",
+      "schedule": "17 6 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

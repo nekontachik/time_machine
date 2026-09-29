@@ -6,7 +6,16 @@ import type { ImageResponse } from "@/types";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const { allowed, limit } = await checkBucketLimit(ip, "image");
+  const { allowed, limit, reason } = await checkBucketLimit(ip, "image", {
+    failClosed: true,
+  });
+  if (!allowed && reason === "unavailable") {
+    // Redis is down: refuse rather than serve unmetered paid AI calls.
+    return NextResponse.json(
+      { error: "Service temporarily unavailable" },
+      { status: 503, headers: { "Retry-After": "60" } }
+    );
+  }
   if (!allowed) {
     return NextResponse.json(
       { error: "Daily limit reached", limit },
