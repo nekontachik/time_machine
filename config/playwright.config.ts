@@ -2,6 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "../tests/e2e",
+  // Visual baselines are not committed, and screenshots taken on a Mac never
+  // match ones rendered on the Linux CI runner, so visual regression only
+  // runs locally (`npx playwright test visual --update-snapshots` to seed).
+  testIgnore: process.env.CI ? ["**/visual.spec.ts"] : [],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
