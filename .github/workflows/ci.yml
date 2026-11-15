@@ -209,7 +209,9 @@ jobs:
   # scenario/image via page.route() in the specs.
   e2e:
     name: "🎭 E2E (Playwright)"
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.58 cannot
+    # install browser dependencies for yet. Revisit after a Playwright bump.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       redis:
@@ -259,7 +261,7 @@ jobs:
 
       - name: Server log
         if: failure()
-        run: tail -n 200 next.log
+        run: tail -n 200 next.log || true
 
       - name: Upload Playwright report
         if: failure()
