@@ -6,8 +6,17 @@ import { parseJsonBody, ScenarioRequestSchema } from "@/lib/validators";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const { allowed, remaining, limit } = await checkBucketLimit(ip, "scenario");
+  const { allowed, remaining, limit, reason } = await checkBucketLimit(ip, "scenario", {
+    failClosed: true,
+  });
 
+  if (!allowed && reason === "unavailable") {
+    // Redis is down: refuse rather than serve unmetered paid AI calls.
+    return NextResponse.json(
+      { error: "Service temporarily unavailable" },
+      { status: 503, headers: { "Retry-After": "60" } }
+    );
+  }
   if (!allowed) {
     return NextResponse.json(
       { error: "Daily limit reached", limit },

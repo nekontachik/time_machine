@@ -44,7 +44,9 @@ export function getRedisClient(): Redis | null {
     });
 
     redis.on("error", (err) => {
-      console.warn(
+      // console.error (not warn) so the outage lands in Vercel Runtime Errors —
+      // as a warning it went unnoticed while the Upstash DB was archived.
+      console.error(
         `[redis] connection error — cooling down ${COOLDOWN_MS}ms:`,
         err.message
       );

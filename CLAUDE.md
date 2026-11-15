@@ -18,6 +18,7 @@
 | `/api/scenario` | POST | Streaming alternative history (ReadableStream) |
 | `/api/image` | POST | Flux 1 Schnell image via fal.ai |
 | `/api/test-flux` | POST | Dev-only endpoint (blocked in production) |
+| `/api/health` | GET | Daily cron: Redis keep-alive + health check (CRON_SECRET) |
 | `/api/video/create` | POST | Start Kling video task via fal.ai queue |
 | `/api/video/status` | GET | Poll fal.ai queue for video task status |
 
@@ -52,7 +53,8 @@
 ```
 OPENROUTER_API_KEY=      # required — text generation (events + scenarios)
 FAL_KEY=                 # required — image + video generation via fal.ai
-REDIS_URL=               # optional — cache + rate limiting (fail-open without)
+REDIS_URL=               # required in prod — cache + rate limiting (scenario/image fail closed without it)
+CRON_SECRET=             # required in prod — auth for the daily /api/health cron (Redis keep-alive)
 RATE_LIMIT_FREE=         # optional — free req/day limit (default 3)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_SENTRY_DSN=  # optional — error monitoring
@@ -75,4 +77,5 @@ npm run test:coverage # Vitest with coverage
 - Server Components by default; `"use client"` only for Three.js, hooks, streaming
 - All AI calls through `lib/` wrappers — never inline in components or routes
 - All AI generation (text, image, video) through unified providers: OpenRouter + fal.ai
-- Redis unavailable → rate limit silently bypassed (fail-open)
+- Redis unavailable → events endpoint fails open; /api/scenario and /api/image fail CLOSED (503) in production
+- /api/health (GET, Bearer CRON_SECRET) runs daily via Vercel Cron to keep the free Upstash DB from being archived for inactivity

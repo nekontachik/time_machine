@@ -95,17 +95,41 @@ export function getClientIpFromHeaders(headers: {
   return `unknown_${Math.floor(Date.now() / 60000)}`;
 }
 
+export type RateLimitResult = {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  /** Why the request was blocked. Undefined when allowed. */
+  reason?: "limit" | "unavailable";
+};
+
 /**
  * Check the bucket-specific rate limit for a given IP.
- * Fail-open: if Redis is unavailable, allow the request.
+ *
+ * Default is fail-open: if Redis is unavailable, the request is allowed.
+ * Pass `{ failClosed: true }` for endpoints that spend real money per call
+ * (scenario, image): when Redis is down they are refused with
+ * reason "unavailable" instead of becoming unlimited. Production ran for
+ * weeks with a deleted Redis and no rate limit at all before this existed.
+ *
+ * Fail-closed is only enforced in production, so local `npm run dev`
+ * without REDIS_URL keeps working.
  */
 export async function checkBucketLimit(
   ip: string,
-  bucket: BucketName
-): Promise<{ allowed: boolean; remaining: number; limit: number }> {
+  bucket: BucketName,
+  opts: { failClosed?: boolean } = {}
+): Promise<RateLimitResult> {
   const limit = envLimit(bucket);
+  const failClosed =
+    opts.failClosed === true && process.env.NODE_ENV === "production";
+  const unavailable = (): RateLimitResult =>
+    failClosed
+      ? { allowed: false, remaining: 0, limit, reason: "unavailable" }
+      : { allowed: true, remaining: limit, limit };
+
   const r = getRedisClient();
-  if (!r) return { allowed: true, remaining: limit, limit };
+  if (!r) return unavailable();
 
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -119,9 +143,12 @@ export async function checkBucketLimit(
     )) as number;
 
     const remaining = Math.max(0, limit - count);
-    return { allowed: count <= limit, remaining, limit };
+    const allowed = count <= limit;
+    return allowed
+      ? { allowed, remaining, limit }
+      : { allowed, remaining, limit, reason: "limit" };
   } catch {
-    return { allowed: true, remaining: limit, limit };
+    return unavailable();
   }
 }
 

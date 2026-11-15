@@ -195,7 +195,16 @@ export default function ScenarioStream({ request }: Props) {
         });
 
         if (ignore) return;
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          // Never show raw JSON to the user.
+          const msg =
+            res.status === 429
+              ? "You've reached today's limit of free scenarios. Come back tomorrow!"
+              : res.status === 503
+                ? "The time machine is temporarily offline. Please try again in a minute."
+                : "Something went wrong while generating this scenario. Please try again.";
+          throw new Error(msg);
+        }
 
         const reader = res.body?.getReader();
         if (!reader) throw new Error("No response body");
