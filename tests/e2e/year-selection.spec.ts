@@ -80,65 +80,30 @@ test.describe("Year selection", () => {
     ).toBeVisible({ timeout: 1000 });
   });
 
-  test("typing a future year and submitting shows inline error, does not navigate", async ({
-    page,
-  }) => {
+  // The number input clamps to [MIN_YEAR, MAX_YEAR] as you type, so an
+  // out-of-range year can never reach submit from the UI. (The old tests here
+  // forced "2099" past the clamp; the browser's own min/max constraint then
+  // blocked the submit before React's handler ran, so the inline error they
+  // looked for was unreachable.) These tests cover the behaviour users get.
+  test("typing a future year clamps it to the maximum", async ({ page }) => {
     await page.goto("/");
     const numberInput = page.locator('input[type="number"]');
-    const button = page.getByRole("button", { name: /Travel to/i });
-
-    // Force a future year into the input bypassing the JS clamp (direct value set)
-    await numberInput.evaluate((el: HTMLInputElement) => {
-      el.value = "2099";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    // Directly trigger submit without relying on the clamped React state
-    // The form submit handler must validate and block navigation
-    await page.evaluate(() => {
-      const form = document.querySelector("form");
-      form?.requestSubmit();
-    });
-
-    // Error message should appear
-    await expect(page.getByRole("alert")).toBeVisible();
-    await expect(page.getByRole("alert")).toContainText(/year|рік/i);
-
-    // URL must NOT have changed — still on homepage
-    expect(page.url()).toMatch(/\/$/);
+    await numberInput.fill("2099");
+    await expect(numberInput).toHaveValue("2024");
+    await expect(page.getByRole("button", { name: /travel to 2024/i })).toBeVisible();
   });
 
-  test("number input turns red border on invalid submit", async ({ page }) => {
+  test("submitting after a clamped future year goes to the max year", async ({ page }) => {
     await page.goto("/");
-    const numberInput = page.locator('input[type="number"]');
-
-    await numberInput.evaluate((el: HTMLInputElement) => {
-      el.value = "2099";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    await page.evaluate(() => {
-      document.querySelector("form")?.requestSubmit();
-    });
-
-    // After failed submit, input should have red border class
-    await expect(numberInput).toHaveClass(/border-red-500/);
+    await page.locator('input[type="number"]').fill("2099");
+    await page.getByRole("button", { name: /travel to/i }).click();
+    await page.waitForURL(/\/events\/2024/);
   });
 
-  test("error clears when user starts correcting the year", async ({ page }) => {
+  test("typing below the minimum clamps to the earliest year", async ({ page }) => {
     await page.goto("/");
     const numberInput = page.locator('input[type="number"]');
-
-    // Trigger error first
-    await numberInput.evaluate((el: HTMLInputElement) => {
-      el.value = "2099";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await page.evaluate(() => document.querySelector("form")?.requestSubmit());
-    await expect(page.getByRole("alert")).toBeVisible();
-
-    // Now type a valid year
-    await numberInput.fill("1945");
-    await expect(page.getByRole("alert")).not.toBeVisible();
+    await numberInput.fill("-9999");
+    await expect(numberInput).toHaveValue("-3000");
   });
 });

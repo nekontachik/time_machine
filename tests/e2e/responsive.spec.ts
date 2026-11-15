@@ -26,7 +26,7 @@ test.describe("Mobile-specific layout @mobile", () => {
 
   test("events page has no horizontal scroll", async ({ page }) => {
     await page.goto("/events/1969?lang=en&e2e_mock=1");
-    await page.waitForSelector(".rounded-xl.border");
+    await page.waitForSelector(".rounded-2xl.border");
     const scrollWidth = await page.evaluate(
       () => document.documentElement.scrollWidth
     );
@@ -41,7 +41,7 @@ test.describe("Mobile-specific layout @mobile", () => {
   }) => {
     await page.goto("/");
     const btn = page.getByRole("button", {
-      name: /переглянути|view events/i,
+      name: /travel to/i,
     });
     const box = await btn.boundingBox();
     expect(box).not.toBeNull();
@@ -53,11 +53,11 @@ test.describe("Mobile-specific layout @mobile", () => {
     page,
   }) => {
     await page.goto("/events/1969?lang=en&e2e_mock=1");
-    const cards = page.locator(".rounded-xl.border");
+    const cards = page.locator(".rounded-2xl.border");
     await expect(cards.first()).toBeVisible();
     const toggleBtn = cards
       .first()
-      .getByRole("button", { name: /не сталось|didn't happen/i });
+      .getByRole("button", { name: /erase it/i });
     const box = await toggleBtn.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.width).toBeGreaterThanOrEqual(44);

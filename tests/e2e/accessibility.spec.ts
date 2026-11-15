@@ -96,6 +96,15 @@ test.describe("Accessibility audit (WCAG 2.1 AA)", () => {
     await page.goto(`/scenario?${params}`);
     await expect(page.locator("h2")).toBeVisible();
 
+    // The streamed text fades in (opacity 0 → 1 over 0.6s). Scanning mid-fade
+    // makes axe measure a half-transparent colour and report a false
+    // contrast violation, so wait until the fade has fully finished.
+    const scenarioText = page.getByText(/moon landing never happened/);
+    await expect(scenarioText).toBeVisible();
+    await expect
+      .poll(() => scenarioText.evaluate((el) => getComputedStyle(el).opacity))
+      .toBe("1");
+
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa"])
       .analyze();
@@ -152,7 +161,7 @@ test.describe("Accessibility audit (WCAG 2.1 AA)", () => {
     expect(["input", "button", "a"]).toContain(tagName);
 
     // Find submit button and confirm keyboard activation works
-    const button = page.getByRole("button", { name: /view events|переглянути/i });
+    const button = page.getByRole("button", { name: /travel to/i });
     await button.focus();
     await expect(button).toBeFocused();
   });
