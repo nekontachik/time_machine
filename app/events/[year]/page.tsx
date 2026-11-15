@@ -66,7 +66,11 @@ export default async function EventsPage({ params, searchParams }: Props) {
       // attackers cannot bypass the API rate-limit by hitting the SSR
       // page directly with random lang values.
       const ip = getClientIpFromHeaders(headers());
-      const { allowed } = await checkBucketLimit(ip, "events");
+      // failClosed: with Redis down there is no cache and no limit, so
+      // every visit would be an unmetered paid generation (production only).
+      const { allowed } = await checkBucketLimit(ip, "events", {
+        failClosed: true,
+      });
       if (!allowed) {
         // Surface as 429-equivalent through notFound() so we don't leak
         // rate-limit state in the URL. A nicer UX would show a "try again

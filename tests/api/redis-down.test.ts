@@ -8,7 +8,12 @@ vi.mock("@/lib/infrastructure/rate-limit", () => ({
   checkBucketLimit: vi.fn(async () => result),
   getClientIp: () => "127.0.0.1",
 }));
-vi.mock("@/lib/ai/text", () => ({ streamScenario }));
+const generateEvents = vi.fn();
+vi.mock("@/lib/ai/text", () => ({ streamScenario, generateEvents }));
+vi.mock("@/lib/infrastructure/cache", () => ({
+  getCachedEvents: vi.fn(async () => null),
+  setCachedEvents: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/ai/image", () => ({ generateScenarioImage }));
 
 const scenarioBody = { year: 1969, events: [{ id: "1", happened: false }], lang: "en" };
@@ -44,6 +49,17 @@ describe("paid endpoints when Redis is unavailable", () => {
     const res = await POST(post("http://x/api/image", imageBody));
     expect(res.status).toBe(503);
     expect(generateScenarioImage).not.toHaveBeenCalled();
+  });
+
+  it("events → 503 and never calls the model", async () => {
+    result = { allowed: false, remaining: 0, limit: 30, reason: "unavailable" };
+    generateEvents.mockReset();
+    const { GET } = await import("@/app/api/historical-events/route");
+    const checkBucketLimit = (await import("@/lib/infrastructure/rate-limit")).checkBucketLimit;
+    const res = await GET(new Request("http://x/api/historical-events?year=1969&lang=en") as never);
+    expect(res.status).toBe(503);
+    expect(generateEvents).not.toHaveBeenCalled();
+    expect(checkBucketLimit).toHaveBeenCalledWith("127.0.0.1", "events", { failClosed: true });
   });
 
   it("scenario → still 429 when the daily limit is reached", async () => {

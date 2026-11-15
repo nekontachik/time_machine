@@ -100,6 +100,9 @@ async function callFlux(prompt: string): Promise<string> {
           prompt,
           image_size: "landscape_16_9",
           num_images: 1,
+          // fal's default today, pinned so a default change can't silently
+          // turn the public /api/image endpoint into an unfiltered generator.
+          enable_safety_checker: true,
         },
       }),
       timeoutPromise,

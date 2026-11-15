@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
   // so the whole body is schema-validated before any of it reaches the model
   // prompt (see redteam/VULN_TAXONOMY.md). ScenarioRequestSchema supersedes
   // the older validateScenarioEvents() check — it enforces the same event
-  // contract plus .strict() on every object and a cap on `premium`.
+  // contract plus .strict() on every object (which also rejects the retired `premium`).
   const result = await parseJsonBody(req, ScenarioRequestSchema);
   if (!result.ok) {
     return NextResponse.json(result.body, { status: result.status });
   }
-  const { year, events, lang, premium } = result.data;
+  const { year, events, lang } = result.data;
 
   // Shared with the eval harness so the traces it produces use byte-identical
   // prompts. Returns NO_CHANGES_SENTINEL when nothing was toggled off, which
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   const changes = buildChangesString(events);
 
   try {
-    const stream = await streamScenario({ year, changes, lang, premium });
+    const stream = await streamScenario({ year, changes, lang });
 
     return new NextResponse(stream, {
       headers: {

@@ -40,3 +40,30 @@ export function getRedisClient(): Redis | null {
 
 - **Silent degradation.** Users might not notice reduced quality (placeholder images, uncached responses). Sentry tags `ai_provider_error: true` on provider failures so we can monitor degradation rates.
 - **Cost spikes possible.** If Redis cache is down for an extended period, every request triggers fresh AI generation. Monitoring AI provider costs becomes important.
+
+## Amendment (2026-11): Redis fails closed for paid endpoints
+
+**Status:** Supersedes the Redis row above.
+
+The "cost protection" rationale did not hold in practice. Production ran for
+weeks against an archived Upstash database: rate limiting was silently off,
+and because the events cache lives in the same Redis, every events request was
+a fresh paid Gemini + Tavily call. Nobody noticed, because fail-open hid it.
+
+New behaviour, production only (`NODE_ENV === "production"`; local dev without
+`REDIS_URL` still fails open):
+
+| Endpoint | Redis unavailable |
+|----------|-------------------|
+| `/api/scenario` | 503 + `Retry-After: 60` |
+| `/api/image` | 503 + `Retry-After: 60` |
+| `/api/historical-events` | 503 + `Retry-After: 60` |
+| `/events/[year]` SSR page (cache miss) | `notFound()`, same as the rate-limit path |
+
+To make an outage visible rather than silent, `/api/health` is called daily by
+Vercel Cron (it also keeps the free Upstash database from being archived for
+inactivity), and Redis connection errors are logged with `console.error` so
+they surface in Vercel Runtime Errors.
+
+The other rows (fal.ai placeholder, Tavily, stream interruption) are unchanged:
+they degrade quality, not cost control.

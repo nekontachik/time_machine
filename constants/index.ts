@@ -62,3 +62,8 @@ export const MAX_EVENTS = 20;
  *  injected directly via the API. The client toggle UI is not a trust
  *  boundary — see redteam/VULN_TAXONOMY.md. */
 export const MAX_EVENT_TITLE_LEN = 200;
+
+/** Max length of the scenario excerpt POSTed to /api/image. The client sends
+ *  the first 400 chars of the generated scenario; anything much longer is
+ *  someone using the endpoint as a general-purpose image generator. */
+export const MAX_IMAGE_SUMMARY_LEN = 500;

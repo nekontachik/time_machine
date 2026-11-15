@@ -146,12 +146,11 @@ describe("POST /api/scenario — streaming", () => {
     expect(res.status).toBe(200);
   });
 
-  it("passes premium options to streamScenario", async () => {
-    let capturedArgs: Record<string, unknown> = {};
-    mockStreamScenario.mockImplementation((args: Record<string, unknown>) => {
-      capturedArgs = args;
-      return Promise.resolve(makeStream(["ok"]));
-    });
+  it("rejects the retired premium field with 400 and never streams", async () => {
+    // premium had no paywall behind it and the client never sends it; it was
+    // only a free-text slot into the prompt, so .strict() now rejects it.
+    mockStreamScenario.mockClear();
+    mockStreamScenario.mockImplementation(() => Promise.resolve(makeStream(["ok"])));
 
     const req = new Request("http://localhost/api/scenario", {
       method: "POST",
@@ -165,8 +164,8 @@ describe("POST /api/scenario — streaming", () => {
     });
 
     const res = await POST(req as unknown as import("next/server").NextRequest);
-    expect(res.status).toBe(200);
-    expect(capturedArgs.premium).toEqual({ country: "Ukraine", city: "Kyiv" });
+    expect(res.status).toBe(400);
+    expect(mockStreamScenario).not.toHaveBeenCalled();
   });
 
   it("returns 500 when streamScenario throws", async () => {

@@ -1,6 +1,12 @@
 import "server-only";
 import { z } from "zod";
-import { MIN_YEAR, MAX_YEAR, MAX_EVENTS, MAX_EVENT_TITLE_LEN } from "@/constants";
+import {
+  MIN_YEAR,
+  MAX_YEAR,
+  MAX_EVENTS,
+  MAX_EVENT_TITLE_LEN,
+  MAX_IMAGE_SUMMARY_LEN,
+} from "@/constants";
 
 /**
  * Centralised request-body validators.
@@ -61,19 +67,17 @@ export const ScenarioRequestSchema = z
     // adversarial upper bound.
     events: z.array(EventToggleSchema).max(MAX_EVENTS),
     lang: LangSchema,
-    premium: z
-      .object({
-        country: z.string().max(60),
-        city: z.string().max(60),
-      })
-      .strict()
-      .optional(),
+    // No `premium` field: there is no paywall behind it and the client never
+    // sends it, so accepting it only gave anyone a free-text slot in the
+    // prompt. .strict() now rejects it with 400.
   })
   .strict();
 
 export const ImageRequestSchema = z
   .object({
-    scenarioSummary: z.string().min(10).max(2000),
+    // The client sends at most the first 400 chars of the scenario; 500
+    // leaves headroom without turning this into a free-form prompt box.
+    scenarioSummary: z.string().min(10).max(MAX_IMAGE_SUMMARY_LEN),
     year: YearSchema,
     style: z.enum(["cinematic", "painterly", "sketch"]).optional(),
   })
