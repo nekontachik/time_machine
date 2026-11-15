@@ -157,6 +157,67 @@ describe("streamScenario", () => {
     expect(userMsg.content).not.toContain("Focus on impact on");
   });
 
+  it("aborts the upstream request when the client cancels the stream", async () => {
+    // An upstream stream that keeps producing until it is aborted.
+    let signal: AbortSignal | undefined;
+    mockCreate.mockImplementationOnce(
+      async (_body: unknown, opts: { signal: AbortSignal }) => {
+        signal = opts.signal;
+        return {
+          [Symbol.asyncIterator]: async function* () {
+            while (!opts.signal.aborted) {
+              yield { choices: [{ delta: { content: "x" } }] };
+              await new Promise((r) => setTimeout(r, 1));
+            }
+            throw Object.assign(new Error("aborted"), { name: "AbortError" });
+          },
+        };
+      }
+    );
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const stream = await streamScenario({ year: 1969, changes: "x", lang: "en" });
+    const reader = stream.getReader();
+    await reader.read();
+    await reader.cancel();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(signal?.aborted).toBe(true);
+    // A client disconnect is not a server error.
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("errors the stream instead of hanging when upstream fails mid-stream", async () => {
+    mockCreate.mockResolvedValueOnce({
+      [Symbol.asyncIterator]: async function* () {
+        yield { choices: [{ delta: { content: "partial" } }] };
+        throw new Error("upstream 502");
+      },
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const stream = await streamScenario({ year: 1969, changes: "x", lang: "en" });
+
+    await expect(readStream(stream)).rejects.toThrow("Scenario generation failed");
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("does not leak upstream error details to the client", async () => {
+    mockCreate.mockResolvedValueOnce({
+      [Symbol.asyncIterator]: async function* () {
+        throw new Error("401 invalid key sk-or-secret");
+      },
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const stream = await streamScenario({ year: 1969, changes: "x", lang: "en" });
+
+    await expect(readStream(stream)).rejects.not.toThrow(/sk-or-secret/);
+    errSpy.mockRestore();
+  });
+
   it("uses streaming mode in the API call", async () => {
     mockCreate.mockResolvedValueOnce(makeAsyncStream(["chunk"]));
 

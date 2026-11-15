@@ -72,11 +72,69 @@ export function getClientIp(req: NextRequest): string {
     .get("x-vercel-forwarded-for")
     ?.split(",")[0]
     ?.trim();
-  if (vercel) return vercel;
-  if (req.ip) return req.ip;
+  if (vercel) return rateLimitKeyForIp(vercel);
+  if (req.ip) return rateLimitKeyForIp(req.ip);
   const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (fwd) return fwd;
+  if (fwd) return rateLimitKeyForIp(fwd);
   return `unknown_${Math.floor(Date.now() / 60000)}`;
+}
+
+/**
+ * Collapse an IP into the unit a single client actually controls.
+ *
+ * IPv4 addresses are used as-is. An IPv6 subscriber is normally handed a
+ * whole /64 (2^64 addresses) and can rotate through it freely, so keying on
+ * the full address lets one client mint unlimited fresh buckets. IPv6 is
+ * therefore keyed on its /64 prefix: `v6:2001:db8:1:2::/64`.
+ *
+ * IPv4-mapped IPv6 (`::ffff:1.2.3.4`) is unwrapped to plain IPv4 so the same
+ * client is not counted in two buckets. Anything unparseable is returned
+ * unchanged (it is still a stable key, just not a normalised one).
+ */
+export function rateLimitKeyForIp(raw: string): string {
+  let ip = raw.trim();
+  // Strip brackets and port: "[2001:db8::1]:443"
+  const bracketed = ip.match(/^\[([^\]]+)\](?::\d+)?$/);
+  if (bracketed) ip = bracketed[1];
+  // Drop zone id: "fe80::1%eth0"
+  ip = ip.split("%")[0];
+
+  if (!ip.includes(":")) return ip; // IPv4 (or opaque)
+
+  const mapped = ip.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (mapped) return mapped[1];
+
+  const groups = expandIpv6(ip);
+  if (!groups) return ip;
+  const prefix = groups
+    .slice(0, 4)
+    .map((g) => parseInt(g, 16).toString(16))
+    .join(":");
+  return `v6:${prefix}::/64`;
+}
+
+/** Expand an IPv6 address to its 8 hex groups, or null if malformed. */
+function expandIpv6(ip: string): string[] | null {
+  let addr = ip.toLowerCase();
+  // Trailing embedded IPv4 ("64:ff9b::1.2.3.4") → two hex groups.
+  const v4 = addr.match(/^(.*:)(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b, c, d] = v4.slice(2).map(Number);
+    if ([a, b, c, d].some((n) => n > 255)) return null;
+    addr = `${v4[1]}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+  }
+
+  const halves = addr.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const missing = 8 - head.length - tail.length;
+  if (halves.length === 1 ? missing !== 0 : missing < 1) return null;
+
+  const groups = [...head, ...Array(Math.max(0, missing)).fill("0"), ...tail];
+  if (groups.length !== 8) return null;
+  if (!groups.every((g) => /^[0-9a-f]{1,4}$/.test(g))) return null;
+  return groups;
 }
 
 /**
@@ -89,9 +147,9 @@ export function getClientIpFromHeaders(headers: {
   // Same precedence as getClientIp — see the note there on why the
   // Vercel-written header wins over client-supplied x-forwarded-for.
   const vercel = headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
-  if (vercel) return vercel;
+  if (vercel) return rateLimitKeyForIp(vercel);
   const fwd = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (fwd) return fwd;
+  if (fwd) return rateLimitKeyForIp(fwd);
   return `unknown_${Math.floor(Date.now() / 60000)}`;
 }
 

@@ -113,24 +113,48 @@ export async function streamScenario({
     canary: process.env.REDTEAM_CANARY, // red-team only; undefined in prod
   });
 
-  const stream = await client.chat.completions.create({
-    model: spec.model,
-    max_tokens: spec.maxTokens,
-    stream: true,
-    messages: spec.messages,
-  });
+  // Aborting this cancels the upstream OpenRouter request, so a client that
+  // disconnects mid-scenario stops the generation (and the billing) instead
+  // of letting it run to max_tokens for nobody.
+  const upstream = new AbortController();
+
+  const stream = await client.chat.completions.create(
+    {
+      model: spec.model,
+      max_tokens: spec.maxTokens,
+      stream: true,
+      messages: spec.messages,
+    },
+    { signal: upstream.signal }
+  );
 
   const encoder = new TextEncoder();
+  let cancelled = false;
 
   return new ReadableStream({
     async start(controller) {
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          controller.enqueue(encoder.encode(delta));
+      try {
+        for await (const chunk of stream) {
+          if (cancelled) break;
+          const delta = chunk.choices[0]?.delta?.content;
+          if (delta) {
+            controller.enqueue(encoder.encode(delta));
+          }
         }
+        if (!cancelled) controller.close();
+      } catch (err) {
+        // After cancel() the abort surfaces here as an error; the consumer
+        // is already gone, so there is nothing to report.
+        if (cancelled) return;
+        console.error("[scenario] upstream stream failed:", err);
+        // Error the stream so the client's reader rejects instead of
+        // waiting forever on a stream that will never close.
+        controller.error(new Error("Scenario generation failed"));
       }
-      controller.close();
+    },
+    cancel() {
+      cancelled = true;
+      upstream.abort();
     },
   });
 }
