@@ -29,7 +29,7 @@ test.describe("Scenario page", () => {
   test("page without query params shows placeholder text", async ({ page }) => {
     await page.goto("/scenario");
     await expect(
-      page.getByText(/оберіть події|select events and click/i)
+      page.getByText(/no events selected/i)
     ).toBeVisible();
   });
 
@@ -73,15 +73,19 @@ test.describe("Scenario page", () => {
     ).toBeVisible();
   });
 
-  test("back link navigates to home", async ({ page }) => {
+  test("'New scenario' goes back to the same year's events", async ({ page }) => {
     await mockScenarioAPI(page, "Quick.");
     await page.goto(`/scenario?${VALID_PARAMS}`);
-    const backLink = page.getByRole("link", {
-      name: /новий сценарій|new scenario/i,
-    });
-    await backLink.click();
-    await page.waitForURL("/");
+    await page.getByRole("link", { name: /new scenario/i }).click();
+    await page.waitForURL(/\/events\/1969/);
     expect(page.url()).not.toContain("/scenario");
+  });
+
+  test("'Choose another year' navigates to home", async ({ page }) => {
+    await mockScenarioAPI(page, "Quick.");
+    await page.goto(`/scenario?${VALID_PARAMS}`);
+    await page.getByRole("link", { name: /choose another year/i }).click();
+    await page.waitForURL((url) => url.pathname === "/");
   });
 
   test("year is displayed in h2 heading", async ({ page }) => {

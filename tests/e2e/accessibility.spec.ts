@@ -152,7 +152,7 @@ test.describe("Accessibility audit (WCAG 2.1 AA)", () => {
     expect(["input", "button", "a"]).toContain(tagName);
 
     // Find submit button and confirm keyboard activation works
-    const button = page.getByRole("button", { name: /view events|переглянути/i });
+    const button = page.getByRole("button", { name: /travel to/i });
     await button.focus();
     await expect(button).toBeFocused();
   });
