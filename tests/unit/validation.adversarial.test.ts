@@ -104,6 +104,20 @@ describe("ImageRequestSchema — strict mode", () => {
     ).toBe(false);
   });
 
+  it("accepts the client's real payload size (first 400 chars of the scenario)", () => {
+    expect(
+      ImageRequestSchema.safeParse({ scenarioSummary: "x".repeat(400), year: 1969 })
+        .success
+    ).toBe(true);
+  });
+
+  it("rejects a summary longer than 500 chars (no free-form prompt box)", () => {
+    expect(
+      ImageRequestSchema.safeParse({ scenarioSummary: "x".repeat(501), year: 1969 })
+        .success
+    ).toBe(false);
+  });
+
   it("rejects unknown style enum value", () => {
     expect(
       ImageRequestSchema.safeParse({

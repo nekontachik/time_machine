@@ -77,6 +77,17 @@ describe("generateScenarioImage — success", () => {
     expect(mockFalSubscribe).toHaveBeenCalledTimes(1);
   });
 
+  it("always asks fal.ai to run its safety checker", async () => {
+    mockFalSubscribe.mockResolvedValueOnce(
+      makeSuccessResult("https://fal.media/img/safe.jpg")
+    );
+
+    await generateScenarioImage("Great victory", 1945);
+
+    const [, opts] = mockFalSubscribe.mock.calls[0] as [string, { input: Record<string, unknown> }];
+    expect(opts.input.enable_safety_checker).toBe(true);
+  });
+
   it("uses event + scenarioSummary in prompt when event is provided", async () => {
     mockFalSubscribe.mockResolvedValueOnce(
       makeSuccessResult("https://fal.media/img/1.jpg")

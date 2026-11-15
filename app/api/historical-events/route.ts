@@ -7,7 +7,19 @@ import type { EventsResponse, HistoricalEvent } from "@/types";
 
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
-  const { allowed, remaining, limit } = await checkBucketLimit(ip, "events");
+  // Fail closed in production: without Redis there is no cache either, so
+  // every request would be a fresh paid Gemini + Tavily call with no limit.
+  const { allowed, remaining, limit, reason } = await checkBucketLimit(
+    ip,
+    "events",
+    { failClosed: true }
+  );
+  if (!allowed && reason === "unavailable") {
+    return NextResponse.json(
+      { error: "Service temporarily unavailable" },
+      { status: 503, headers: { "Retry-After": "60" } }
+    );
+  }
   if (!allowed) {
     return NextResponse.json(
       { error: "Daily limit reached", limit },
