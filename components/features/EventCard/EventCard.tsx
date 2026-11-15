@@ -102,7 +102,7 @@ export default function EventCard({ event, onToggle, happened = true, rank }: Pr
           <div className="flex gap-2">
             <button
               onClick={() => onToggle(event.id, true)}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
+              className={`flex-1 min-h-[44px] rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
                 happened
                   ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/40"
                   : "bg-gray-700 text-gray-400 hover:bg-gray-600"
@@ -112,7 +112,7 @@ export default function EventCard({ event, onToggle, happened = true, rank }: Pr
             </button>
             <button
               onClick={() => onToggle(event.id, false)}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
+              className={`flex-1 min-h-[44px] rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
                 !happened
                   ? "bg-red-700 text-white shadow-lg shadow-red-900/40"
                   : "bg-gray-700 text-gray-400 hover:bg-gray-600"
